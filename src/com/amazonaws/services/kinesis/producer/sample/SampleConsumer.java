@@ -129,8 +129,12 @@ public class SampleConsumer implements IRecordProcessorFactory {
 				try {
 					byte[] b = new byte[r.getData().remaining()];
 					r.getData().get(b);
-					seqNos.add(Double.parseDouble(new String(b, "UTF-8")
-							.split(" ")[0]));
+					Double currentTemperature = Double.parseDouble(new String(
+							b, "UTF-8").split(" ")[0]);
+					seqNos.add(currentTemperature);
+					log.info("Current temperature is "
+							+ (double) Math.round(currentTemperature * 10d)
+							/ 10d);
 				} catch (Exception e) {
 					log.error("Error parsing record", e);
 					System.exit(1);
@@ -189,8 +193,8 @@ public class SampleConsumer implements IRecordProcessorFactory {
 				return;
 			}
 
-			log.info(String.format("Current temperature is "
-					+ temperatures.get(0)));
+			// log.info(String.format("Current temperature is "
+			// + temperatures.get(0)));
 		}
 	}
 
@@ -215,7 +219,7 @@ public class SampleConsumer implements IRecordProcessorFactory {
 		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB);
 		dbUtils.deleteTable(DB_NAME);
 
-		Thread.sleep(500);
+		Thread.sleep(1000);
 
 		final SampleConsumer consumer = new SampleConsumer();
 

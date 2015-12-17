@@ -91,7 +91,7 @@ public class SampleProducer {
 	/**
 	 * Put records for this number of seconds before exiting.
 	 */
-	private static final int SECONDS_TO_RUN = 7;
+	private static final int SECONDS_TO_RUN = 10;
 
 	/**
 	 * Put this number of records per second.
@@ -106,7 +106,7 @@ public class SampleProducer {
 	 * 
 	 * @see {@link KinesisProducerConfiguration#setRecordTtl(long)}
 	 */
-	private static final int RECORDS_PER_SECOND = 1000;
+	private static final int RECORDS_PER_SECOND = 10;
 
 	/**
 	 * Change this to your stream name.
