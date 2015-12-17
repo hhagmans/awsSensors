@@ -81,6 +81,8 @@ public class SampleProducer {
 	private static final String TIMESTAMP = Long.toString(System
 			.currentTimeMillis());
 
+	private static Double temperature = Utils.getFirstTemperature();
+
 	/**
 	 * Change these to try larger or smaller records.
 	 */
@@ -230,6 +232,7 @@ public class SampleProducer {
 
 			@Override
 			public void onSuccess(UserRecordResult result) {
+				temperature = Utils.getNextTemperature(temperature);
 				completed.getAndIncrement();
 			}
 		};
@@ -238,8 +241,7 @@ public class SampleProducer {
 		final Runnable putOneRecord = new Runnable() {
 			@Override
 			public void run() {
-				ByteBuffer data = Utils.generateData(sequenceNumber.get(),
-						DATA_SIZE);
+				ByteBuffer data = Utils.generateData(temperature, DATA_SIZE);
 				// TIMESTAMP is our partition key
 				ListenableFuture<UserRecordResult> f = producer.addUserRecord(
 						STREAM_NAME, TIMESTAMP, Utils.randomExplicitHashKey(),

@@ -90,9 +90,9 @@ public class SampleConsumer implements IRecordProcessorFactory {
 	private final AtomicLong largestTimestamp = new AtomicLong(0);
 
 	// List of record sequence numbers we have seen so far.
-	private final List<Long> sequenceNumbers = new ArrayList<>();
+	private final List<Double> temperatures = new ArrayList<>();
 
-	private final static String DB_NAME = "KinesisProducerLibSampleConsumer";
+	public final static String DB_NAME = "KinesisProducerLibSampleConsumer";
 
 	// A mutex for largestTimestamp and sequenceNumbers. largestTimestamp is
 	// nevertheless an AtomicLong because we cannot capture non-final variables
@@ -115,7 +115,7 @@ public class SampleConsumer implements IRecordProcessorFactory {
 		public void processRecords(List<Record> records,
 				IRecordProcessorCheckpointer checkpointer) {
 			long timestamp = 0;
-			List<Long> seqNos = new ArrayList<>();
+			List<Double> seqNos = new ArrayList<>();
 
 			for (Record r : records) {
 				// Get the timestamp of this run from the partition key.
@@ -129,7 +129,8 @@ public class SampleConsumer implements IRecordProcessorFactory {
 				try {
 					byte[] b = new byte[r.getData().remaining()];
 					r.getData().get(b);
-					seqNos.add(Long.parseLong(new String(b, "UTF-8").split(" ")[0]));
+					seqNos.add(Double.parseDouble(new String(b, "UTF-8")
+							.split(" ")[0]));
 				} catch (Exception e) {
 					log.error("Error parsing record", e);
 					System.exit(1);
@@ -142,14 +143,14 @@ public class SampleConsumer implements IRecordProcessorFactory {
 							.format("Found new larger timestamp: %d (was %d), clearing state",
 									timestamp, largestTimestamp.get()));
 					largestTimestamp.set(timestamp);
-					sequenceNumbers.clear();
+					temperatures.clear();
 				}
 
 				// Only add to the shared list if our data is from the latest
 				// run.
 				if (largestTimestamp.get() == timestamp) {
-					sequenceNumbers.addAll(seqNos);
-					Collections.sort(sequenceNumbers);
+					temperatures.addAll(seqNos);
+					Collections.sort(temperatures);
 				}
 			}
 
@@ -183,26 +184,13 @@ public class SampleConsumer implements IRecordProcessorFactory {
 				return;
 			}
 
-			if (sequenceNumbers.size() == 0) {
+			if (temperatures.size() == 0) {
 				log.info("No sequence numbers found for current run.");
 				return;
 			}
 
-			// The producer assigns sequence numbers starting from 1, so we
-			// start counting from one before that, i.e. 0.
-			long last = 0;
-			long gaps = 0;
-			for (long sn : sequenceNumbers) {
-				if (sn - last > 1) {
-					gaps++;
-				}
-				last = sn;
-			}
-
-			log.info(String
-					.format("Found %d gaps in the sequence numbers. Lowest seen so far is %d, highest is %d",
-							gaps, sequenceNumbers.get(0),
-							sequenceNumbers.get(sequenceNumbers.size() - 1)));
+			log.info(String.format("Current temperature is "
+					+ temperatures.get(0)));
 		}
 	}
 
@@ -211,7 +199,7 @@ public class SampleConsumer implements IRecordProcessorFactory {
 		return this.new RecordProcessor();
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		KinesisClientLibConfiguration config = new KinesisClientLibConfiguration(
 				DB_NAME, SampleProducer.STREAM_NAME,
 				new DefaultAWSCredentialsProviderChain(),
@@ -226,6 +214,8 @@ public class SampleConsumer implements IRecordProcessorFactory {
 		dynamoDB.setRegion(region);
 		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB);
 		dbUtils.deleteTable(DB_NAME);
+
+		Thread.sleep(500);
 
 		final SampleConsumer consumer = new SampleConsumer();
 
