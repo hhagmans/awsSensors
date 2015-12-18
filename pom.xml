@@ -35,4 +35,43 @@
             <version>1.7.13</version>
         </dependency>
     </dependencies>
+    <profiles>
+        <profile>
+            <!-- Start the Kinesis Client Application to calculate the top n referrers by resource -->
+            <id>producer</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.2.1</version>
+                        <configuration>
+                            <mainClass>com.amazonaws.services.kinesis.producer.sample.SampleProducer</mainClass>
+                            <arguments>
+                                <argument>${stream.name}</argument>
+                            </arguments>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <!-- Start the Kinesis record producer on a single thread -->
+            <id>deleteResources</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.2.1</version>
+                        <configuration>
+                            <mainClass>com.amazonaws.services.kinesis.producer.sample.DeleteResources</mainClass>
+                            <arguments>
+                            </arguments>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

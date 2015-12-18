@@ -130,11 +130,11 @@ public class SampleConsumer implements IRecordProcessorFactory {
 					byte[] b = new byte[r.getData().remaining()];
 					r.getData().get(b);
 					Double currentTemperature = Double.parseDouble(new String(
-							b, "UTF-8").split(" ")[0]);
+							b, "UTF-8").split(";")[0]);
+					String sensorName = (new String(b, "UTF-8").split(";")[1]);
 					seqNos.add(currentTemperature);
-					log.info("Current temperature is "
-							+ (double) Math.round(currentTemperature * 10d)
-							/ 10d);
+					log.info("Current temperature of " + sensorName + " is "
+							+ currentTemperature);
 				} catch (Exception e) {
 					log.error("Error parsing record", e);
 					System.exit(1);

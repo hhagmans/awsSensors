@@ -39,7 +39,7 @@ public class Utils {
 		} else if (random > 0.66) {
 			lastTemperature += 0.1;
 		}
-		return lastTemperature;
+		return (double) Math.round(lastTemperature * 10d) / 10d;
 	}
 
 	public static double getFirstTemperature() {
@@ -59,10 +59,13 @@ public class Utils {
 	 *            is added until this length is reached.
 	 * @return ByteBuffer containing the blob
 	 */
-	public static ByteBuffer generateData(double lasttemperature, int totalLen) {
+	public static ByteBuffer generateData(double lasttemperature,
+			String sensorName, int totalLen) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(Double.toString(getNextTemperature(lasttemperature)));
-		sb.append(" ");
+		sb.append(";");
+		sb.append(sensorName);
+		sb.append(";");
 		while (sb.length() < totalLen) {
 			sb.append("a");
 		}

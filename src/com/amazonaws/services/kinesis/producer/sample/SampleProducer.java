@@ -89,6 +89,11 @@ public class SampleProducer {
 	private static final int DATA_SIZE = 128;
 
 	/**
+	 * Name of the sensor that produces the data.
+	 */
+	private static String sensorName = "Sensor 1";
+
+	/**
 	 * Put records for this number of seconds before exiting.
 	 */
 	private static final int SECONDS_TO_RUN = 10;
@@ -202,6 +207,10 @@ public class SampleProducer {
 		StreamUtils streamUtils = new StreamUtils(kinesis);
 		streamUtils.createOrRenewStream(STREAM_NAME, NUMBER_OF_SHARDS);
 
+		if (args.length != 0) {
+			sensorName = args[0];
+		}
+
 		final KinesisProducer producer = getKinesisProducer();
 
 		// The monotonically increasing sequence number we will put in the data
@@ -241,7 +250,8 @@ public class SampleProducer {
 		final Runnable putOneRecord = new Runnable() {
 			@Override
 			public void run() {
-				ByteBuffer data = Utils.generateData(temperature, DATA_SIZE);
+				ByteBuffer data = Utils.generateData(temperature, sensorName,
+						DATA_SIZE);
 				// TIMESTAMP is our partition key
 				ListenableFuture<UserRecordResult> f = producer.addUserRecord(
 						STREAM_NAME, TIMESTAMP, Utils.randomExplicitHashKey(),
