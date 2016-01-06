@@ -58,8 +58,7 @@ public class StreamUtils {
 	}
 
 	/**
-	 * Create a stream if it doesn't already exist or deletes the old stream
-	 * with the same name and creates a new one.
+	 * Create a stream if it doesn't already exist.
 	 * 
 	 * @param streamName
 	 *            Name of stream
@@ -69,11 +68,10 @@ public class StreamUtils {
 	 * @throws AmazonServiceException
 	 *             Error communicating with Amazon Kinesis.
 	 */
-	public void createOrRenewStream(String streamName, int shards)
+	public void createStream(String streamName, int shards)
 			throws AmazonClientException {
 		try {
 			if (isActive(kinesis.describeStream(streamName))) {
-				kinesis.deleteStream(streamName);
 				try {
 					Thread.sleep(CREATION_WAIT_TIME_IN_SECONDS);
 				} catch (InterruptedException e) {
@@ -82,7 +80,9 @@ public class StreamUtils {
 									streamName));
 					return;
 				}
-				throw new ResourceNotFoundException("Old resource deleted");
+				LOG.info(String.format("Stream %s was already created...",
+						streamName));
+				return;
 			}
 		} catch (ResourceNotFoundException ex) {
 			LOG.info(String.format("Creating stream %s...", streamName));
@@ -124,6 +124,38 @@ public class StreamUtils {
 		}
 		throw new RuntimeException("Stream " + streamName
 				+ " did not become active within 2 minutes.");
+	}
+
+	/**
+	 * Create a stream if it doesn't already exist or deletes the old stream
+	 * with the same name and creates a new one.
+	 * 
+	 * @param streamName
+	 *            Name of stream
+	 * @param shards
+	 *            Number of shards to create stream with. This is ignored if the
+	 *            stream already exists.
+	 * @throws AmazonServiceException
+	 *             Error communicating with Amazon Kinesis.
+	 */
+	public void createOrRenewStream(String streamName, int shards)
+			throws AmazonClientException {
+		try {
+			if (isActive(kinesis.describeStream(streamName))) {
+				LOG.info(String.format("Deleting stream %s....", streamName));
+				kinesis.deleteStream(streamName);
+				try {
+					Thread.sleep(CREATION_WAIT_TIME_IN_SECONDS);
+				} catch (InterruptedException e) {
+					LOG.warn(String
+							.format("Interrupted while waiting for %s stream to become active. Aborting.",
+									streamName));
+					return;
+				}
+			}
+		} catch (ResourceNotFoundException ex) {
+		}
+		createStream(streamName, shards);
 	}
 
 	/**

@@ -17,7 +17,9 @@ package com.innoq.hagmans.bachelor;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -89,7 +91,7 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 	// determine which run is the latest and disregard data from earlier runs.
 	private final AtomicLong largestTimestamp = new AtomicLong(0);
 
-	// List of record sequence numbers we have seen so far.
+	// Map of record temperatures we have seen so far.
 	private final List<Double> temperatures = new ArrayList<>();
 
 	public static String db_name = "SensorConsumer";
@@ -99,7 +101,7 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 	 */
 	public static String streamName = "test";
 
-	// A mutex for largestTimestamp and sequenceNumbers. largestTimestamp is
+	// A mutex for largestTimestamp and temperatures. largestTimestamp is
 	// nevertheless an AtomicLong because we cannot capture non-final variables
 	// in the child class.
 	private final Object lock = new Object();
@@ -107,8 +109,8 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 	/**
 	 * One instance of RecordProcessor is created for every shard in the stream.
 	 * All instances of RecordProcessor share state by capturing variables from
-	 * the enclosing SampleConsumer instance. This is a simple way to combine
-	 * the data from multiple shards.
+	 * the enclosing TemperatureConsumer instance. This is a simple way to
+	 * combine the data from multiple shards.
 	 */
 	private class RecordProcessor implements IRecordProcessor {
 		@Override
@@ -120,7 +122,7 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 		public void processRecords(List<Record> records,
 				IRecordProcessorCheckpointer checkpointer) {
 			long timestamp = 0;
-			List<Double> seqNos = new ArrayList<>();
+			Map<String, ArrayList<Double>> allTemperatures = new HashMap<>();
 
 			for (Record r : records) {
 				// Get the timestamp of this run from the partition key.
@@ -137,7 +139,16 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 					Double currentTemperature = Double.parseDouble(new String(
 							b, "UTF-8").split(";")[0]);
 					String sensorName = (new String(b, "UTF-8").split(";")[1]);
-					seqNos.add(currentTemperature);
+
+					ArrayList<Double> tempList;
+					if (allTemperatures.containsKey(sensorName)) {
+						tempList = allTemperatures.get(sensorName);
+					} else {
+						tempList = new ArrayList<>();
+					}
+					tempList.add(currentTemperature);
+					allTemperatures.put(sensorName, tempList);
+
 					log.info("Current temperature of " + sensorName + " is "
 							+ currentTemperature);
 				} catch (Exception e) {
@@ -158,7 +169,7 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 				// Only add to the shared list if our data is from the latest
 				// run.
 				if (largestTimestamp.get() == timestamp) {
-					temperatures.addAll(seqNos);
+					temperatures.addAll(allTemperatures);
 					Collections.sort(temperatures);
 				}
 			}
@@ -188,19 +199,15 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 	 * Log a message indicating the current state.
 	 */
 	public void logResults() {
-		synchronized (lock) {
-			if (largestTimestamp.get() == 0) {
-				return;
-			}
-
-			if (temperatures.size() == 0) {
-				log.info("No sequence numbers found for current run.");
-				return;
-			}
-
-			// log.info(String.format("Current temperature is "
-			// + temperatures.get(0)));
-		}
+		/*
+		 * synchronized (lock) { if (largestTimestamp.get() == 0) { return; }
+		 * 
+		 * if (temperatures.size() == 0) {
+		 * log.info("No sequence numbers found for current run."); return; }
+		 * 
+		 * // log.info(String.format("Current temperature is " // +
+		 * temperatures.get(0))); }
+		 */
 	}
 
 	@Override

@@ -212,7 +212,7 @@ public class TemperatureProducer {
 				new ClientConfiguration());
 		kinesis.setRegion(region);
 		StreamUtils streamUtils = new StreamUtils(kinesis);
-		streamUtils.createOrRenewStream(streamName, NUMBER_OF_SHARDS);
+		streamUtils.createStream(streamName, NUMBER_OF_SHARDS);
 
 		final KinesisProducer producer = getKinesisProducer();
 
