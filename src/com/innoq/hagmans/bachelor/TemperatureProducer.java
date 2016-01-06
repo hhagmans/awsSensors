@@ -253,8 +253,8 @@ public class TemperatureProducer {
 		final Runnable putOneRecord = new Runnable() {
 			@Override
 			public void run() {
-				ByteBuffer data = Utils.generateData(temperature, sensorName,
-						DATA_SIZE);
+				ByteBuffer data = Utils.generateData(sequenceNumber,
+						temperature, sensorName, DATA_SIZE);
 				// TIMESTAMP is our partition key
 				ListenableFuture<UserRecordResult> f = producer.addUserRecord(
 						streamName, TIMESTAMP, Utils.randomExplicitHashKey(),

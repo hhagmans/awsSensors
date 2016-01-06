@@ -7,6 +7,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 
@@ -30,11 +31,15 @@ public class DeleteResources {
 
 		Region region = RegionUtils.getRegion(TemperatureProducer.REGION);
 		AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
-		AmazonDynamoDB dynamoDB = new AmazonDynamoDBClient(credentialsProvider,
-				new ClientConfiguration());
-		dynamoDB.setRegion(region);
-		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB);
+		AmazonDynamoDB amazonDynamoDB = new AmazonDynamoDBClient(
+				credentialsProvider, new ClientConfiguration());
+		AmazonDynamoDBClient client = new AmazonDynamoDBClient();
+		client.setRegion(region);
+		DynamoDB dynamoDB = new DynamoDB(client);
+		amazonDynamoDB.setRegion(region);
+		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB);
 		dbUtils.deleteTable(db_name);
+		dbUtils.deleteTable(TemperatureConsumer.tableName);
 
 		AmazonKinesis kinesis = new AmazonKinesisClient(credentialsProvider,
 				new ClientConfiguration());

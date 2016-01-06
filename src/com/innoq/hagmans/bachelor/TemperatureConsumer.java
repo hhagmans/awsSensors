@@ -34,6 +34,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessor;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorFactory;
@@ -96,6 +97,8 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 
 	public static String db_name = "SensorConsumer";
 
+	public static String tableName = "Temperatures";
+
 	/**
 	 * Change this to your stream name.
 	 */
@@ -113,9 +116,21 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 	 * combine the data from multiple shards.
 	 */
 	private class RecordProcessor implements IRecordProcessor {
+
+		DynamoDBUtils dbUtils;
+
 		@Override
 		public void initialize(String shardId) {
 
+			Region region = RegionUtils.getRegion(TemperatureProducer.REGION);
+			AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
+			AmazonDynamoDB amazonDynamoDB = new AmazonDynamoDBClient(
+					credentialsProvider, new ClientConfiguration());
+			AmazonDynamoDBClient client = new AmazonDynamoDBClient();
+			client.setRegion(region);
+			DynamoDB dynamoDB = new DynamoDB(client);
+			amazonDynamoDB.setRegion(region);
+			dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB);
 		}
 
 		@Override
@@ -136,9 +151,10 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 				try {
 					byte[] b = new byte[r.getData().remaining()];
 					r.getData().get(b);
+					String count = new String(b, "UTF-8").split(";")[0];
 					Double currentTemperature = Double.parseDouble(new String(
-							b, "UTF-8").split(";")[0]);
-					String sensorName = (new String(b, "UTF-8").split(";")[1]);
+							b, "UTF-8").split(";")[1]);
+					String sensorName = (new String(b, "UTF-8").split(";")[2]);
 
 					ArrayList<Double> tempList;
 					if (allTemperatures.containsKey(sensorName)) {
@@ -149,8 +165,10 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 					tempList.add(currentTemperature);
 					allTemperatures.put(sensorName, tempList);
 
-					log.info("Current temperature of " + sensorName + " is "
-							+ currentTemperature);
+					log.info("Current temperature #" + count + " of "
+							+ sensorName + " is " + currentTemperature);
+					dbUtils.putTemperature(tableName, sensorName,
+							currentTemperature, count);
 				} catch (Exception e) {
 					log.error("Error parsing record", e);
 					System.exit(1);
@@ -218,7 +236,6 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 	}
 
 	public static void main(String[] args) throws InterruptedException {
-
 		if (args.length == 2) {
 			streamName = args[0];
 			db_name = args[1];
@@ -232,11 +249,15 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 
 		Region region = RegionUtils.getRegion(TemperatureProducer.REGION);
 		AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
-		AmazonDynamoDB dynamoDB = new AmazonDynamoDBClient(credentialsProvider,
-				new ClientConfiguration());
-		dynamoDB.setRegion(region);
-		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB);
+		AmazonDynamoDB amazonDynamoDB = new AmazonDynamoDBClient(
+				credentialsProvider, new ClientConfiguration());
+		AmazonDynamoDBClient client = new AmazonDynamoDBClient();
+		client.setRegion(region);
+		DynamoDB dynamoDB = new DynamoDB(client);
+		amazonDynamoDB.setRegion(region);
+		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB);
 		dbUtils.deleteTable(db_name);
+		dbUtils.createTemperatureTableIfNotExists(tableName);
 
 		Thread.sleep(1000);
 

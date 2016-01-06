@@ -27,6 +27,9 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
@@ -42,10 +45,11 @@ import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 public class DynamoDBUtils {
 	private static final Log LOG = LogFactory.getLog(DynamoDBUtils.class);
 
-	private static final String ATTRIBUTE_NAME_HASH_KEY = "resource";
-	private static final String ATTRIBUTE_NAME_RANGE_KEY = "timestamp";
+	private static final String ATTRIBUTE_NAME_HASH_KEY = "sensor";
+	private static final String ATTRIBUTE_NAME_RANGE_KEY = "count";
 
-	private AmazonDynamoDB dynamoDB;
+	private AmazonDynamoDB amazonDynamoDB;
+	private DynamoDB dynamoDB;
 
 	/**
 	 * Create a new utility instance that uses the provided Amazon DynamoDB
@@ -54,10 +58,11 @@ public class DynamoDBUtils {
 	 * @param dynamoDB
 	 *            The Amazon DynamoDB client to use.
 	 */
-	public DynamoDBUtils(AmazonDynamoDB dynamoDB) {
-		if (dynamoDB == null) {
+	public DynamoDBUtils(DynamoDB dynamoDB, AmazonDynamoDB amazonDynamoDB) {
+		if (amazonDynamoDB == null) {
 			throw new NullPointerException("dynamoDB must not be null");
 		}
+		this.amazonDynamoDB = amazonDynamoDB;
 		this.dynamoDB = dynamoDB;
 	}
 
@@ -73,19 +78,19 @@ public class DynamoDBUtils {
 	public DynamoDBMapper createMapperForTable(String tableName) {
 		DynamoDBMapperConfig config = new DynamoDBMapperConfig(
 				TableNameOverride.withTableNameReplacement(tableName));
-		return new DynamoDBMapper(dynamoDB, config);
+		return new DynamoDBMapper(amazonDynamoDB, config);
 	}
 
 	/**
-	 * Creates the table to store our counts in with a hash key of "resource"
-	 * and a range key of "timestamp" so we can query counts for a given
-	 * resource by time. This uses an initial provisioned throughput of 10 read
-	 * capacity units and 5 write capacity units
+	 * Creates the table to store our temperatures in with a hash key of
+	 * "sensor" and a range key of "timestamp" so we can query counts for a
+	 * given sensor by time. This uses an initial provisioned throughput of 10
+	 * read capacity units and 5 write capacity units
 	 * 
 	 * @param tableName
 	 *            The name of the table to create.
 	 */
-	public void createCountTableIfNotExists(String tableName) {
+	public void createTemperatureTableIfNotExists(String tableName) {
 		List<KeySchemaElement> ks = new ArrayList<>();
 		ks.add(new KeySchemaElement().withKeyType(KeyType.HASH)
 				.withAttributeName(ATTRIBUTE_NAME_HASH_KEY));
@@ -115,7 +120,7 @@ public class DynamoDBUtils {
 				.withAttributeDefinitions(attributeDefinitions);
 
 		try {
-			dynamoDB.createTable(createTableRequest);
+			amazonDynamoDB.createTable(createTableRequest);
 
 			LOG.info(String
 					.format("Created DynamoDB table: %s. Waiting up to 5 minutes for it to become ACTIVE...",
@@ -133,6 +138,25 @@ public class DynamoDBUtils {
 		}
 	}
 
+	public void putTemperature(String tableName, String sensor,
+			double temperature, String count) {
+
+		Table table = dynamoDB.getTable(tableName);
+
+		table.putItem(new Item().withPrimaryKey("sensor", sensor, "count",
+				count).withDouble("temperature", temperature));
+		System.out.println("PutItem succeeded: "
+				+ table.getItem("sensor", sensor, "count", count)
+						.toJSONPretty());
+	}
+
+	/*
+	 * public Map<String, List<String>> getMapOfTemperatures(String tableName) {
+	 * HashMap<String, List<String>> temperatureMap = new HashMap<>();
+	 * 
+	 * }
+	 */
+
 	/**
 	 * Delete a DynamoDB table.
 	 * 
@@ -142,7 +166,7 @@ public class DynamoDBUtils {
 	public void deleteTable(String tableName) {
 		LOG.info(String.format("Deleting DynamoDB table %s", tableName));
 		try {
-			dynamoDB.deleteTable(tableName);
+			amazonDynamoDB.deleteTable(tableName);
 		} catch (ResourceNotFoundException ex) {
 			// Ignore, table could not be found.
 		} catch (AmazonClientException ex) {
@@ -201,8 +225,8 @@ public class DynamoDBUtils {
 	 */
 	private boolean doesTableExist(String tableName) {
 		try {
-			return "ACTIVE".equals(dynamoDB.describeTable(tableName).getTable()
-					.getTableStatus());
+			return "ACTIVE".equals(amazonDynamoDB.describeTable(tableName)
+					.getTable().getTableStatus());
 		} catch (AmazonClientException ex) {
 			LOG.warn(String.format("Unable to describe table %s", tableName),
 					ex);
