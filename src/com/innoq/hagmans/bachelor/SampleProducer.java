@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-package com.amazonaws.services.kinesis.producer.sample;
+package com.innoq.hagmans.bachelor;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executors;
@@ -116,7 +116,7 @@ public class SampleProducer {
 	/**
 	 * Change this to your stream name.
 	 */
-	public static final String STREAM_NAME = "test";
+	public static String streamName = "test";
 
 	/**
 	 * Number of shards in the stream
@@ -198,6 +198,11 @@ public class SampleProducer {
 
 	public static void main(String[] args) throws Exception {
 
+		if (args.length == 2) {
+			streamName = args[0];
+			sensorName = args[1];
+		}
+
 		// Delete old stream if it exists and create a new stream
 		Region region = RegionUtils.getRegion(REGION);
 		AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
@@ -205,11 +210,7 @@ public class SampleProducer {
 				new ClientConfiguration());
 		kinesis.setRegion(region);
 		StreamUtils streamUtils = new StreamUtils(kinesis);
-		streamUtils.createOrRenewStream(STREAM_NAME, NUMBER_OF_SHARDS);
-
-		if (args.length != 0) {
-			sensorName = args[0];
-		}
+		streamUtils.createOrRenewStream(streamName, NUMBER_OF_SHARDS);
 
 		final KinesisProducer producer = getKinesisProducer();
 
@@ -254,7 +255,7 @@ public class SampleProducer {
 						DATA_SIZE);
 				// TIMESTAMP is our partition key
 				ListenableFuture<UserRecordResult> f = producer.addUserRecord(
-						STREAM_NAME, TIMESTAMP, Utils.randomExplicitHashKey(),
+						streamName, TIMESTAMP, Utils.randomExplicitHashKey(),
 						data);
 				Futures.addCallback(f, callback);
 			}

@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-package com.amazonaws.services.kinesis.producer.sample;
+package com.innoq.hagmans.bachelor;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -92,7 +92,12 @@ public class SampleConsumer implements IRecordProcessorFactory {
 	// List of record sequence numbers we have seen so far.
 	private final List<Double> temperatures = new ArrayList<>();
 
-	public final static String DB_NAME = "KinesisProducerLibSampleConsumer";
+	public static String db_name = "SensorConsumer";
+
+	/**
+	 * Change this to your stream name.
+	 */
+	public static String streamName = "test";
 
 	// A mutex for largestTimestamp and sequenceNumbers. largestTimestamp is
 	// nevertheless an AtomicLong because we cannot capture non-final variables
@@ -204,9 +209,14 @@ public class SampleConsumer implements IRecordProcessorFactory {
 	}
 
 	public static void main(String[] args) throws InterruptedException {
+
+		if (args.length == 2) {
+			streamName = args[0];
+			db_name = args[1];
+		}
+
 		KinesisClientLibConfiguration config = new KinesisClientLibConfiguration(
-				DB_NAME, SampleProducer.STREAM_NAME,
-				new DefaultAWSCredentialsProviderChain(),
+				db_name, streamName, new DefaultAWSCredentialsProviderChain(),
 				"KinesisProducerLibSampleConsumer").withRegionName(
 				SampleProducer.REGION).withInitialPositionInStream(
 				InitialPositionInStream.TRIM_HORIZON);
@@ -217,7 +227,7 @@ public class SampleConsumer implements IRecordProcessorFactory {
 				new ClientConfiguration());
 		dynamoDB.setRegion(region);
 		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB);
-		dbUtils.deleteTable(DB_NAME);
+		dbUtils.deleteTable(db_name);
 
 		Thread.sleep(1000);
 

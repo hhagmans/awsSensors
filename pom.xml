@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.amazonaws</groupId>
-    <artifactId>amazon-kinesis-producer-sample</artifactId>
+    <groupId>com.innoq</groupId>
+    <artifactId>hagmans-bachelor</artifactId>
     <version>1.0.0</version>
     <build>
         <sourceDirectory>src</sourceDirectory>
@@ -17,7 +17,7 @@
             </plugin>
         </plugins>
     </build>
-    <name>KinesisProducerLibrary Sample Application</name>
+    <name>Hagmans Bachelor</name>
     <dependencies>
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -37,7 +37,7 @@
     </dependencies>
     <profiles>
         <profile>
-            <!-- Start the Kinesis Client Application to calculate the top n referrers by resource -->
+            <!-- Start the Producer -->
             <id>producer</id>
             <build>
                 <plugins>
@@ -46,9 +46,30 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>1.2.1</version>
                         <configuration>
-                            <mainClass>com.amazonaws.services.kinesis.producer.sample.SampleProducer</mainClass>
+                            <mainClass>com.innoq.hagmans.bachelor.SampleProducer</mainClass>
+                            <arguments>
+                            	<argument>${stream.name}</argument>
+                                <argument>${sensor.name}</argument>
+                            </arguments>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <!-- Start the Consumer -->
+            <id>consumer</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.2.1</version>
+                        <configuration>
+                            <mainClass>com.innoq.hagmans.bachelor.SampleConsumer</mainClass>
                             <arguments>
                                 <argument>${stream.name}</argument>
+                                <argument>${db.name}</argument>
                             </arguments>
                         </configuration>
                     </plugin>
@@ -65,8 +86,10 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>1.2.1</version>
                         <configuration>
-                            <mainClass>com.amazonaws.services.kinesis.producer.sample.DeleteResources</mainClass>
+                            <mainClass>com.innoq.hagmans.bachelor.DeleteResources</mainClass>
                             <arguments>
+                            	<argument>${stream.name}</argument>
+                            	<argument>${db.name}</argument>
                             </arguments>
                         </configuration>
                     </plugin>

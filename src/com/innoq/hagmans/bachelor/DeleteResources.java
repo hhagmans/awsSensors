@@ -1,4 +1,4 @@
-package com.amazonaws.services.kinesis.producer.sample;
+package com.innoq.hagmans.bachelor;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -13,18 +13,27 @@ import com.amazonaws.services.kinesis.AmazonKinesisClient;
 public class DeleteResources {
 
 	public static void main(String[] args) {
+
+		String streamName = SampleProducer.streamName;
+		String db_name = SampleConsumer.db_name;
+
+		if (args.length == 2) {
+			streamName = args[0];
+			db_name = args[1];
+		}
+
 		Region region = RegionUtils.getRegion(SampleProducer.REGION);
 		AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
 		AmazonDynamoDB dynamoDB = new AmazonDynamoDBClient(credentialsProvider,
 				new ClientConfiguration());
 		dynamoDB.setRegion(region);
 		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB);
-		dbUtils.deleteTable(SampleConsumer.DB_NAME);
+		dbUtils.deleteTable(db_name);
 
 		AmazonKinesis kinesis = new AmazonKinesisClient(credentialsProvider,
 				new ClientConfiguration());
 		kinesis.setRegion(region);
 		StreamUtils streamUtils = new StreamUtils(kinesis);
-		streamUtils.deleteStream(SampleProducer.STREAM_NAME);
+		streamUtils.deleteStream(streamName);
 	}
 }

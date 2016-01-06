@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-package com.amazonaws.services.kinesis.producer.sample;
+package com.innoq.hagmans.bachelor;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
@@ -175,7 +175,7 @@ public class MetricsAwareSampleProducer {
 							sequenceNumber.incrementAndGet(), SENSOR_NAME,
 							dataSize);
 					ListenableFuture<UserRecordResult> f = kinesisProducer
-							.addUserRecord(SampleProducer.STREAM_NAME,
+							.addUserRecord(SampleProducer.streamName,
 									timetstamp, data);
 					Futures.addCallback(f, callback);
 				} else {

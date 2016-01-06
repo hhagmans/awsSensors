@@ -1,4 +1,4 @@
-package com.amazonaws.services.kinesis.producer.sample;
+package com.innoq.hagmans.bachelor;
 
 /*
  * Copyright 2014 Amazon.com, Inc. or its affiliates. All Rights Reserved.
