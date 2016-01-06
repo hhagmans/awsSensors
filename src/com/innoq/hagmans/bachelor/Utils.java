@@ -32,6 +32,15 @@ public class Utils {
 		return new BigInteger(128, RANDOM).toString(10);
 	}
 
+	/**
+	 * Generates the next temperature. It will either be the last Temperature or
+	 * the last Temperature +- 0.1 degree (all with a 33.3% chance)
+	 * 
+	 * @param lastTemperature
+	 *            Last temperature that was send. Used as the base to calculate
+	 *            the new temperature
+	 * @return The new generated temperature as a double
+	 */
 	public static double getNextTemperature(double lastTemperature) {
 		float random = RANDOM.nextFloat();
 		if (random < 0.33) {
@@ -48,12 +57,13 @@ public class Utils {
 
 	/**
 	 * Generates a blob containing a UTF-8 string. The string begins with the
-	 * sequence number in decimal notation, followed by a space, followed by
-	 * padding.
+	 * genereated temperature in decimal notation, followed by a semicolon,
+	 * followed by the sensorname, followed by a semicolon, followed by padding.
 	 * 
-	 * @param sequenceNumber
-	 *            The sequence number to place at the beginning of the record
-	 *            data.
+	 * @param lastTemperature
+	 *            The last temperature that was send
+	 * @param sensorName
+	 *            The name of the sensor that produces the temperature
 	 * @param totalLen
 	 *            Total length of the data. After the sequence number, padding
 	 *            is added until this length is reached.

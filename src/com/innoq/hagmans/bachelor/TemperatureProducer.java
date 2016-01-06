@@ -47,7 +47,7 @@ import com.google.common.util.concurrent.ListenableFuture;
  * record.
  * 
  * <p>
- * In this sample we'll be putting a monotonically increasing sequence number in
+ * This class puts a randomly generated temperature and a sequence number in
  * each logical record, and then padding the record to 128 bytes long. The
  * consumer will then check that all records are received correctly by verifying
  * that there are no gaps in the sequence numbers.
@@ -65,7 +65,7 @@ import com.google.common.util.concurrent.ListenableFuture;
  * explicit hash key.
  * 
  * @see TemperatureConsumer
- * @author chaodeng
+ * @author hhagmans
  * 
  */
 public class TemperatureProducer {
@@ -84,7 +84,7 @@ public class TemperatureProducer {
 	private static Double temperature = Utils.getFirstTemperature();
 
 	/**
-	 * Change these to try larger or smaller records.
+	 * Data size of each record
 	 */
 	private static final int DATA_SIZE = 128;
 
@@ -114,7 +114,7 @@ public class TemperatureProducer {
 	private static int recordsPerSecond = 10;
 
 	/**
-	 * Change this to your stream name.
+	 * Stream name where the records are put in
 	 */
 	public static String streamName = "test";
 
@@ -124,7 +124,7 @@ public class TemperatureProducer {
 	public static final int NUMBER_OF_SHARDS = 1;
 
 	/**
-	 * Change this to the region you are using.
+	 * AWS Region
 	 */
 	public static final String REGION = "us-west-1";
 

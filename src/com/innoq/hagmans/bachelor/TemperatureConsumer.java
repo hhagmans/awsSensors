@@ -77,7 +77,7 @@ import com.amazonaws.services.kinesis.model.Record;
  * no more records to consume.
  * 
  * @see TemperatureProducer
- * @author chaodeng
+ * @author hhagmans
  * 
  */
 public class TemperatureConsumer implements IRecordProcessorFactory {
