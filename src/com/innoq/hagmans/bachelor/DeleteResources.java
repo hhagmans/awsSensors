@@ -14,15 +14,15 @@ public class DeleteResources {
 
 	public static void main(String[] args) {
 
-		String streamName = SampleProducer.streamName;
-		String db_name = SampleConsumer.db_name;
+		String streamName = TemperatureProducer.streamName;
+		String db_name = TemperatureConsumer.db_name;
 
 		if (args.length == 2) {
 			streamName = args[0];
 			db_name = args[1];
 		}
 
-		Region region = RegionUtils.getRegion(SampleProducer.REGION);
+		Region region = RegionUtils.getRegion(TemperatureProducer.REGION);
 		AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
 		AmazonDynamoDB dynamoDB = new AmazonDynamoDBClient(credentialsProvider,
 				new ClientConfiguration());

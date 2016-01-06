@@ -42,7 +42,7 @@ import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason;
 import com.amazonaws.services.kinesis.model.Record;
 
 /**
- * If you haven't looked at {@link SampleProducer}, do so first.
+ * If you haven't looked at {@link TemperatureProducer}, do so first.
  * 
  * <p>
  * As mentioned in SampleProducer, we will check that all records are received
@@ -76,13 +76,13 @@ import com.amazonaws.services.kinesis.model.Record;
  * The consumer continues running until manually terminated, even if there are
  * no more records to consume.
  * 
- * @see SampleProducer
+ * @see TemperatureProducer
  * @author chaodeng
  * 
  */
-public class SampleConsumer implements IRecordProcessorFactory {
+public class TemperatureConsumer implements IRecordProcessorFactory {
 	private static final Logger log = LoggerFactory
-			.getLogger(SampleConsumer.class);
+			.getLogger(TemperatureConsumer.class);
 
 	// All records from a run of the producer have the same timestamp in their
 	// partition keys. Since this value increases for each run, we can use it
@@ -218,10 +218,10 @@ public class SampleConsumer implements IRecordProcessorFactory {
 		KinesisClientLibConfiguration config = new KinesisClientLibConfiguration(
 				db_name, streamName, new DefaultAWSCredentialsProviderChain(),
 				"KinesisProducerLibSampleConsumer").withRegionName(
-				SampleProducer.REGION).withInitialPositionInStream(
+				TemperatureProducer.REGION).withInitialPositionInStream(
 				InitialPositionInStream.TRIM_HORIZON);
 
-		Region region = RegionUtils.getRegion(SampleProducer.REGION);
+		Region region = RegionUtils.getRegion(TemperatureProducer.REGION);
 		AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
 		AmazonDynamoDB dynamoDB = new AmazonDynamoDBClient(credentialsProvider,
 				new ClientConfiguration());
@@ -231,7 +231,7 @@ public class SampleConsumer implements IRecordProcessorFactory {
 
 		Thread.sleep(1000);
 
-		final SampleConsumer consumer = new SampleConsumer();
+		final TemperatureConsumer consumer = new TemperatureConsumer();
 
 		Executors.newScheduledThreadPool(1).scheduleAtFixedRate(new Runnable() {
 			@Override

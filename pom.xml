@@ -46,10 +46,12 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>1.2.1</version>
                         <configuration>
-                            <mainClass>com.innoq.hagmans.bachelor.SampleProducer</mainClass>
+                            <mainClass>com.innoq.hagmans.bachelor.TemperatureProducer</mainClass>
                             <arguments>
                             	<argument>${stream.name}</argument>
                                 <argument>${sensor.name}</argument>
+                                <argument>${run.seconds}</argument>
+                                <argument>${record.second}</argument>
                             </arguments>
                         </configuration>
                     </plugin>
@@ -66,7 +68,7 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>1.2.1</version>
                         <configuration>
-                            <mainClass>com.innoq.hagmans.bachelor.SampleConsumer</mainClass>
+                            <mainClass>com.innoq.hagmans.bachelor.TemperatureConsumer</mainClass>
                             <arguments>
                                 <argument>${stream.name}</argument>
                                 <argument>${db.name}</argument>

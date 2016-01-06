@@ -64,13 +64,13 @@ import com.google.common.util.concurrent.ListenableFuture;
  * affect the random distribution of records across shards since we've set an
  * explicit hash key.
  * 
- * @see SampleConsumer
+ * @see TemperatureConsumer
  * @author chaodeng
  * 
  */
-public class SampleProducer {
+public class TemperatureProducer {
 	private static final Logger log = LoggerFactory
-			.getLogger(SampleProducer.class);
+			.getLogger(TemperatureProducer.class);
 
 	private static final ScheduledExecutorService EXECUTOR = Executors
 			.newScheduledThreadPool(1);
@@ -96,7 +96,7 @@ public class SampleProducer {
 	/**
 	 * Put records for this number of seconds before exiting.
 	 */
-	private static final int SECONDS_TO_RUN = 10;
+	private static int secondsToRun = 10;
 
 	/**
 	 * Put this number of records per second.
@@ -111,7 +111,7 @@ public class SampleProducer {
 	 * 
 	 * @see {@link KinesisProducerConfiguration#setRecordTtl(long)}
 	 */
-	private static final int RECORDS_PER_SECOND = 10;
+	private static int recordsPerSecond = 10;
 
 	/**
 	 * Change this to your stream name.
@@ -198,9 +198,11 @@ public class SampleProducer {
 
 	public static void main(String[] args) throws Exception {
 
-		if (args.length == 2) {
+		if (args.length == 4) {
 			streamName = args[0];
 			sensorName = args[1];
+			secondsToRun = Integer.parseInt(args[2]);
+			recordsPerSecond = Integer.parseInt(args[3]);
 		}
 
 		// Delete old stream if it exists and create a new stream
@@ -266,7 +268,7 @@ public class SampleProducer {
 			@Override
 			public void run() {
 				long put = sequenceNumber.get();
-				long total = RECORDS_PER_SECOND * SECONDS_TO_RUN;
+				long total = recordsPerSecond * secondsToRun;
 				double putPercent = 100.0 * put / total;
 				long done = completed.get();
 				double donePercent = 100.0 * done / total;
@@ -279,15 +281,15 @@ public class SampleProducer {
 		// Kick off the puts
 		log.info(String
 				.format("Starting puts... will run for %d seconds at %d records per second",
-						SECONDS_TO_RUN, RECORDS_PER_SECOND));
+						secondsToRun, recordsPerSecond));
 		executeAtTargetRate(EXECUTOR, putOneRecord, sequenceNumber,
-				SECONDS_TO_RUN, RECORDS_PER_SECOND);
+				secondsToRun, recordsPerSecond);
 
 		// Wait for puts to finish. After this statement returns, we have
 		// finished all calls to putRecord, but the records may still be
 		// in-flight. We will additionally wait for all records to actually
 		// finish later.
-		EXECUTOR.awaitTermination(SECONDS_TO_RUN + 1, TimeUnit.SECONDS);
+		EXECUTOR.awaitTermination(secondsToRun + 1, TimeUnit.SECONDS);
 
 		// If you need to shutdown your application, call flushSync() first to
 		// send any buffered records. This method will block until all records
