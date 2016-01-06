@@ -169,7 +169,9 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 				// Only add to the shared list if our data is from the latest
 				// run.
 				if (largestTimestamp.get() == timestamp) {
-					temperatures.addAll(allTemperatures);
+					for (ArrayList<Double> list : allTemperatures.values()) {
+						temperatures.addAll(list);
+					}
 					Collections.sort(temperatures);
 				}
 			}
