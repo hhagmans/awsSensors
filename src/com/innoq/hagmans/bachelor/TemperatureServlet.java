@@ -87,8 +87,8 @@ public class TemperatureServlet extends HttpServlet {
 					out.println(" {");
 					out.println("animationEnabled: true,");
 					out.println("zoomEnabled: true,");
-					out.println("title:{text: '" + sensor + " at timestamp "
-							+ timestamp + "'},    ");
+					out.println("title:{text: '" + sensor
+							+ " started at timestamp " + timestamp + "'},    ");
 					out.println("data: [{type: 'line', dataPoints: dataPoints"
 							+ sensorCount + "}]");
 					out.println("});");
@@ -107,7 +107,8 @@ public class TemperatureServlet extends HttpServlet {
 						.get(sensor);
 				out.println("<h2>Sensor: " + sensor + "</h2>");
 				for (String timestamp : hashMap.keySet()) {
-					out.println("<h3>Timestamp: " + timestamp + "</h3>");
+					out.println("<h3>Started at timestamp: " + timestamp
+							+ "</h3>");
 					out.println("<div id='chartContainer"
 							+ tempSensorCount
 							+ "' style='height: 300px; width: 75%; margin-left:auto; margin-right:auto;'></div>");
