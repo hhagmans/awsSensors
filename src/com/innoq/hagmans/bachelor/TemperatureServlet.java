@@ -98,9 +98,9 @@ public class TemperatureServlet extends HttpServlet {
 			}
 			out.println("}");
 			out.println("</script>");
-			out.println("<title>Aktuelle Temperaturen</title></head>");
+			out.println("<title>Current temperatures</title></head>");
 			out.println("<body style='text-align:center'>");
-			out.println("<h1>Aktuelle Temperaturen</h1>");
+			out.println("<h1>Current temperatures</h1>");
 			int tempSensorCount = 0;
 			for (String sensor : allTemperatures.keySet()) {
 				HashMap<String, ArrayList<Object>> hashMap = allTemperatures
