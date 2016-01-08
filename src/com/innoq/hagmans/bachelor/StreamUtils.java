@@ -86,31 +86,8 @@ public class StreamUtils {
 			}
 		}
 
-		// Wait for stream to become active
-		int maxRetries = 3;
-		int i = 0;
-		while (i < maxRetries) {
-			i++;
-			try {
-				if (isActive(kinesis.describeStream(streamName))) {
-					return;
-				}
-			} catch (ResourceNotFoundException ignore) {
-				// The stream may be reported as not found if it was just
-				// created.
-			}
-			try {
-				Thread.sleep(DELAY_BETWEEN_STATUS_CHECKS_IN_SECONDS);
-			} catch (InterruptedException e) {
-				LOG.warn(String
-						.format("Interrupted while waiting for %s stream to become active. Aborting.",
-								streamName));
-				Thread.currentThread().interrupt();
-				return;
-			}
-		}
-		throw new RuntimeException("Stream " + streamName
-				+ " did not become active within 2 minutes.");
+		waitForStreamToBecomeActive(streamName);
+
 	}
 
 	/**
@@ -152,8 +129,35 @@ public class StreamUtils {
 	 * @param r
 	 *            The describe stream result to check for ACTIVE status.
 	 */
-	private boolean isActive(DescribeStreamResult r) {
+	public boolean isActive(DescribeStreamResult r) {
 		return "ACTIVE".equals(r.getStreamDescription().getStreamStatus());
+	}
+
+	public void waitForStreamToBecomeActive(String streamName) {
+		int maxRetries = 3;
+		int i = 0;
+		while (i < maxRetries) {
+			i++;
+			try {
+				if (isActive(kinesis.describeStream(streamName))) {
+					return;
+				}
+			} catch (ResourceNotFoundException ignore) {
+				// The stream may be reported as not found if it was just
+				// created.
+			}
+			try {
+				Thread.sleep(DELAY_BETWEEN_STATUS_CHECKS_IN_SECONDS);
+			} catch (InterruptedException e) {
+				LOG.warn(String
+						.format("Interrupted while waiting for %s stream to become active. Aborting.",
+								streamName));
+				Thread.currentThread().interrupt();
+				return;
+			}
+		}
+		throw new RuntimeException("Stream " + streamName
+				+ " did not become active within 2 minutes.");
 	}
 
 	/**

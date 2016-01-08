@@ -33,6 +33,8 @@ import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessor;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorFactory;
@@ -41,6 +43,7 @@ import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibC
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.Worker;
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason;
 import com.amazonaws.services.kinesis.model.Record;
+import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
 
 /**
  * If you haven't looked at {@link TemperatureProducer}, do so first.
@@ -251,6 +254,19 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 		amazonDynamoDB.setRegion(region);
 		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB,
 				client);
+		AmazonKinesis kinesis = new AmazonKinesisClient(credentialsProvider,
+				new ClientConfiguration());
+		kinesis.setRegion(region);
+		StreamUtils streamUtils = new StreamUtils(kinesis);
+		try {
+			if (!streamUtils.isActive(kinesis.describeStream(streamName))) {
+				log.info("Stream is not active.");
+				streamUtils.waitForStreamToBecomeActive(streamName);
+			}
+		} catch (ResourceNotFoundException e) {
+			log.info("Stream is not created right now.");
+			streamUtils.waitForStreamToBecomeActive(streamName);
+		}
 		dbUtils.deleteTable(db_name);
 		dbUtils.createTemperatureTableIfNotExists(tableName);
 

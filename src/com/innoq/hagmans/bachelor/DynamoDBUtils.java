@@ -262,7 +262,7 @@ public class DynamoDBUtils {
 	 * @return {@code true} if the table is ready. False if our timeout exceeded
 	 *         or we were interrupted.
 	 */
-	private boolean waitUntilTableIsActive(String tableName,
+	public boolean waitUntilTableIsActive(String tableName,
 			long secondsBetweenPolls, long timeoutSeconds) {
 		long sleepTimeRemaining = timeoutSeconds * 1000;
 
@@ -297,7 +297,7 @@ public class DynamoDBUtils {
 	 *            The name of the table to check.
 	 * @return {@code true} if the table exists and is in the ACTIVE state
 	 */
-	private boolean doesTableExist(String tableName) {
+	public boolean doesTableExist(String tableName) {
 		try {
 			return "ACTIVE".equals(amazonDynamoDB.describeTable(tableName)
 					.getTable().getTableStatus());
