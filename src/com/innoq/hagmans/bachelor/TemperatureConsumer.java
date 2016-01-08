@@ -15,7 +15,6 @@
 
 package com.innoq.hagmans.bachelor;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -141,7 +140,7 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 		public void processRecords(List<Record> records,
 				IRecordProcessorCheckpointer checkpointer) {
 			long timestamp = 0;
-			HashMap<String, ArrayList<String>> allTemperatures = new HashMap<>();
+			HashMap<String, HashMap<String, String>> allTemperatures = new HashMap<>();
 			int count = 0;
 			for (Record r : records) {
 				// Get the timestamp of this run from the partition key.
@@ -157,18 +156,20 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 					String[] splittedString = new String(b, "UTF-8").split(";");
 					String currentTemperature = splittedString[1];
 					String sensorName = (splittedString[2]);
+					String currentTimeStamp = (splittedString[3]);
 
-					ArrayList<String> tempList;
+					HashMap<String, String> tempList;
 					if (allTemperatures.containsKey(sensorName)) {
 						tempList = allTemperatures.get(sensorName);
 					} else {
-						tempList = new ArrayList<>();
+						tempList = new HashMap<>();
 					}
-					tempList.add(currentTemperature);
+					tempList.put(currentTimeStamp, currentTemperature);
 					allTemperatures.put(sensorName, tempList);
 
 					log.info("Current temperature #" + count + " of "
-							+ sensorName + " is " + currentTemperature);
+							+ sensorName + " at timestamp " + currentTimeStamp
+							+ " is " + currentTemperature);
 					count++;
 					synchronized (lock) {
 						if (count >= 1000) {

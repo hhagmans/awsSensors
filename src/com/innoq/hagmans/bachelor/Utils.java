@@ -59,7 +59,8 @@ public class Utils {
 	/**
 	 * Generates a blob containing a UTF-8 string. The string begins with the
 	 * generated temperature in decimal notation, followed by a semicolon,
-	 * followed by the sensorname, followed by a semicolon, followed by padding.
+	 * followed by the sensorname, followed by a semicolon, followed by the
+	 * current timestamp, followed by a semicolon, followed by padding.
 	 * 
 	 * @param lastTemperature
 	 *            The last temperature that was send
@@ -78,6 +79,8 @@ public class Utils {
 		sb.append(Double.toString(getNextTemperature(lasttemperature)));
 		sb.append(";");
 		sb.append(sensorName);
+		sb.append(";");
+		sb.append(String.valueOf(System.nanoTime()));
 		sb.append(";");
 		while (sb.length() < totalLen) {
 			sb.append("a");

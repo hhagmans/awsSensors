@@ -2,7 +2,6 @@ package com.innoq.hagmans.bachelor;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.servlet.ServletException;
@@ -56,7 +55,7 @@ public class TemperatureServlet extends HttpServlet {
 		// network socket
 		PrintWriter out = response.getWriter();
 
-		HashMap<String, HashMap<String, ArrayList<Object>>> allTemperatures = new HashMap<>();
+		HashMap<String, HashMap<String, HashMap<String, Object>>> allTemperatures = new HashMap<>();
 		if (dbUtils.doesTableExist(tableName)) {
 			allTemperatures = dbUtils.getAllSensorTemperatures(tableName);
 		}
@@ -70,15 +69,17 @@ public class TemperatureServlet extends HttpServlet {
 			out.println("window.onload = function () {");
 			int sensorCount = 0;
 			for (String sensor : allTemperatures.keySet()) {
-				HashMap<String, ArrayList<Object>> hashMap = allTemperatures
+				HashMap<String, HashMap<String, Object>> hashMap = allTemperatures
 						.get(sensor);
 				for (String timestamp : hashMap.keySet()) {
 					int count = 0;
 					out.println("var dataPoints" + sensorCount + " = [];");
-					out.println("var limit = 50000;");
-					for (Object temperature : hashMap.get(timestamp)) {
+					HashMap<String, Object> tempHashMap = hashMap
+							.get(timestamp);
+					for (String temperatureKey : tempHashMap.keySet()) {
 						out.println("dataPoints" + sensorCount + ".push({ x: "
-								+ count + ", y: " + temperature + "});");
+								+ count + ", y: "
+								+ tempHashMap.get(temperatureKey) + "});");
 						count++;
 					}
 					out.println("var chart" + sensorCount
@@ -103,7 +104,7 @@ public class TemperatureServlet extends HttpServlet {
 			out.println("<h1>Current temperatures</h1>");
 			int tempSensorCount = 0;
 			for (String sensor : allTemperatures.keySet()) {
-				HashMap<String, ArrayList<Object>> hashMap = allTemperatures
+				HashMap<String, HashMap<String, Object>> hashMap = allTemperatures
 						.get(sensor);
 				for (String timestamp : hashMap.keySet()) {
 					out.println("<div id='chartContainer"

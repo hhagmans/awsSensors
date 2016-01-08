@@ -136,7 +136,8 @@ public class DynamoDBUtils {
 	}
 
 	public void putTemperatures(String tableName,
-			HashMap<String, ArrayList<String>> temperatureMap, long timestamp) {
+			HashMap<String, HashMap<String, String>> temperatureMap,
+			long timestamp) {
 
 		Table table = dynamoDB.getTable(tableName);
 
@@ -150,20 +151,20 @@ public class DynamoDBUtils {
 
 			Iterator<Item> iterator = items.iterator();
 			Item item = null;
-			List<String> temperatures = null;
+			Map<String, String> temperatures = null;
 			while (iterator.hasNext()) {
 				item = iterator.next();
-				temperatures = item.getList(ATTRIBUTE_NAME_TEMPERATURE);
+				temperatures = item.getMap(ATTRIBUTE_NAME_TEMPERATURE);
 			}
 
 			if (temperatures == null) {
-				temperatures = new ArrayList<>();
+				temperatures = new HashMap<>();
 			}
-			temperatures.addAll(temperatureMap.get(sensor));
+			temperatures.putAll(temperatureMap.get(sensor));
 			table.putItem(new Item()
 					.withPrimaryKey(ATTRIBUTE_NAME_HASH_KEY, sensor,
 							ATTRIBUTE_NAME_RANGE_KEY, String.valueOf(timestamp))
-					.withList(ATTRIBUTE_NAME_TEMPERATURE, temperatures));
+					.withMap(ATTRIBUTE_NAME_TEMPERATURE, temperatures));
 			System.out.println("PutItem succeeded!");
 		}
 	}
@@ -178,7 +179,7 @@ public class DynamoDBUtils {
 	 *         Zeitpunkt die Daten des Sensors erfasst werden und die Values
 	 *         sind eine Liste der Temperaturen des Sensors zum Timestamp
 	 */
-	public HashMap<String, ArrayList<Object>> getTemperaturesForSensor(
+	public HashMap<String, HashMap<String, Object>> getTemperaturesForSensor(
 			String sensor, String tableName) {
 		Table table = dynamoDB.getTable(tableName);
 
@@ -189,11 +190,11 @@ public class DynamoDBUtils {
 
 		Iterator<Item> iterator = items.iterator();
 		Item item = null;
-		HashMap<String, ArrayList<Object>> temperatureMap = new HashMap<>();
+		HashMap<String, HashMap<String, Object>> temperatureMap = new HashMap<>();
 		while (iterator.hasNext()) {
 			item = iterator.next();
 			temperatureMap.put(item.getString(ATTRIBUTE_NAME_RANGE_KEY),
-					new ArrayList<>(item.getList(ATTRIBUTE_NAME_TEMPERATURE)));
+					new HashMap<>(item.getMap(ATTRIBUTE_NAME_TEMPERATURE)));
 		}
 
 		return temperatureMap;
@@ -208,15 +209,15 @@ public class DynamoDBUtils {
 	 *         dessen Zeitpunkt die Daten des Sensors erfasst werden und die
 	 *         Values sind eine Liste der Temperaturen des Sensors zum Timestamp
 	 */
-	public HashMap<String, HashMap<String, ArrayList<Object>>> getAllSensorTemperatures(
+	public HashMap<String, HashMap<String, HashMap<String, Object>>> getAllSensorTemperatures(
 			String tableName) {
 		ScanRequest scanRequest = new ScanRequest().withTableName(tableName);
 
 		ScanResult result = client.scan(scanRequest);
-		HashMap<String, HashMap<String, ArrayList<Object>>> allTemperatures = new HashMap<>();
+		HashMap<String, HashMap<String, HashMap<String, Object>>> allTemperatures = new HashMap<>();
 		for (Map<String, AttributeValue> item : result.getItems()) {
 			String sensorName = item.get(ATTRIBUTE_NAME_HASH_KEY).getS();
-			HashMap<String, ArrayList<Object>> currentHashMap = getTemperaturesForSensor(
+			HashMap<String, HashMap<String, Object>> currentHashMap = getTemperaturesForSensor(
 					sensorName, tableName);
 			allTemperatures.put(sensorName, currentHashMap);
 		}
