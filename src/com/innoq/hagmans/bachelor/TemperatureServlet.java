@@ -64,23 +64,53 @@ public class TemperatureServlet extends HttpServlet {
 			out.println("<!DOCTYPE html>");
 			out.println("<html><head>");
 			out.println("<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'>");
+			out.println("<script type='text/javascript' src='https://www.gstatic.com/charts/loader.js'></script>");
+			out.println("<script type='text/javascript'>");
+			out.println("google.charts.load('current', {'packages':['corechart']});");
+			out.println("google.charts.setOnLoadCallback(drawChart);");
+			out.println("function drawChart() {");
+			int sensorCount = 0;
+			for (String sensor : allTemperatures.keySet()) {
+				HashMap<String, ArrayList<Object>> hashMap = allTemperatures
+						.get(sensor);
+				for (String timestamp : hashMap.keySet()) {
+					out.println("var data" + sensorCount
+							+ " = google.visualization.arrayToDataTable([");
+					out.println("['Time', 'Temperature'],");
+					for (Object temperature : hashMap.get(timestamp)) {
+						out.println("['', " + (String) temperature + "],");
+					}
+					out.println("]);");
+					out.println("var options" + sensorCount + " = {");
+					out.println("title: 'Temperatures of " + sensor
+							+ " at timestamp " + timestamp + "',");
+					out.println("curveType: 'function',");
+					out.println("legend: { position: 'bottom' }");
+					out.println("};");
+					out.println("var chart"
+							+ sensorCount
+							+ " = new google.visualization.LineChart(document.getElementById('curve_chart"
+							+ sensorCount + "'));");
+					out.println("chart" + sensorCount + ".draw(data"
+							+ sensorCount + ", options" + sensorCount + ");");
+					sensorCount++;
+				}
+			}
+			out.println("}");
+			out.println("</script>");
 			out.println("<title>Aktuelle Temperaturen</title></head>");
 			out.println("<body>");
 			out.println("<h1>Aktuelle Temperaturen</h1>");
+			int tempSensorCount = 0;
 			for (String sensor : allTemperatures.keySet()) {
 				HashMap<String, ArrayList<Object>> hashMap = allTemperatures
 						.get(sensor);
 				out.println("<h2>Sensor: " + sensor + "</h2>");
 				for (String timestamp : hashMap.keySet()) {
-					out.println("<h2>Timestamp: " + timestamp + "</h2>");
-					out.println("<ol>");
-					for (Object temperature : hashMap.get(timestamp)) {
-						if (temperature != null) {
-							out.println("<li>Temperatur: "
-									+ (String) temperature + "</li>");
-						}
-					}
-					out.println("</ol>");
+					out.println("<h3>Timestamp: " + timestamp + "</h3>");
+					out.println("<div id='curve_chart" + tempSensorCount
+							+ "' style='width: 900px; height: 500px'></div>");
+					tempSensorCount++;
 				}
 			}
 			out.println("</body>");
