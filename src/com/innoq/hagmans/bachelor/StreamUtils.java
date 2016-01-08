@@ -67,14 +67,6 @@ public class StreamUtils {
 			throws AmazonClientException {
 		try {
 			if (isActive(kinesis.describeStream(streamName))) {
-				try {
-					Thread.sleep(CREATION_WAIT_TIME_IN_SECONDS);
-				} catch (InterruptedException e) {
-					LOG.warn(String
-							.format("Interrupted while waiting for %s stream to become active. Aborting.",
-									streamName));
-					return;
-				}
 				LOG.info(String.format("Stream %s was already created...",
 						streamName));
 				return;

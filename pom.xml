@@ -103,5 +103,26 @@
                 </plugins>
             </build>
         </profile>
+        
+        <profile>
+            <!-- Start the Kinesis record producer on a single thread -->
+            <id>runServlet</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.2.1</version>
+                        <configuration>
+                            <mainClass>com.innoq.hagmans.bachelor.ServletStarter</mainClass>
+                            <arguments>
+                            	<argument>${stream.name}</argument>
+                            	<argument>${db.name}</argument>
+                            </arguments>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

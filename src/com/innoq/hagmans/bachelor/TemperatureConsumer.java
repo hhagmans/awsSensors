@@ -16,10 +16,8 @@
 package com.innoq.hagmans.bachelor;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -92,15 +90,18 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 	// determine which run is the latest and disregard data from earlier runs.
 	private final AtomicLong largestTimestamp = new AtomicLong(0);
 
-	// Map of temperatures we have seen so far.
-	private final List<Double> temperatures = new ArrayList<>();
-
+	/**
+	 * Name of the table, that holds the data of the current run
+	 */
 	public static String db_name = "SensorConsumer";
 
+	/**
+	 * Name of the table that holds the temperatures
+	 */
 	public static String tableName = "Temperatures";
 
 	/**
-	 * Change this to your stream name.
+	 * Name of the Kinesis stream
 	 */
 	public static String streamName = "test";
 
@@ -130,20 +131,20 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 			client.setRegion(region);
 			DynamoDB dynamoDB = new DynamoDB(client);
 			amazonDynamoDB.setRegion(region);
-			dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB);
+			dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB, client);
 		}
 
 		@Override
 		public void processRecords(List<Record> records,
 				IRecordProcessorCheckpointer checkpointer) {
 			long timestamp = 0;
-			Map<String, ArrayList<Double>> allTemperatures = new HashMap<>();
+			HashMap<String, ArrayList<String>> allTemperatures = new HashMap<>();
 
 			for (Record r : records) {
 				// Get the timestamp of this run from the partition key.
 				timestamp = Math.max(timestamp,
 						Long.parseLong(r.getPartitionKey()));
-
+				int count = 0;
 				// Extract the sequence number. It's encoded as a decimal
 				// string and placed at the beginning of the record data,
 				// followed by a space. The rest of the record data is padding
@@ -152,12 +153,10 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 					byte[] b = new byte[r.getData().remaining()];
 					r.getData().get(b);
 					String[] splittedString = new String(b, "UTF-8").split(";");
-					String count = splittedString[0];
-					Double currentTemperature = Double
-							.parseDouble(splittedString[1]);
+					String currentTemperature = splittedString[1];
 					String sensorName = (splittedString[2]);
 
-					ArrayList<Double> tempList;
+					ArrayList<String> tempList;
 					if (allTemperatures.containsKey(sensorName)) {
 						tempList = allTemperatures.get(sensorName);
 					} else {
@@ -166,36 +165,29 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 					tempList.add(currentTemperature);
 					allTemperatures.put(sensorName, tempList);
 
-					log.info("Current temperature #" + count + " of "
-							+ sensorName + " is " + currentTemperature);
-					dbUtils.putTemperature(tableName, sensorName,
-							currentTemperature, count);
+					log.info("Current temperature of " + sensorName + " is "
+							+ currentTemperature);
+					count++;
+					synchronized (lock) {
+						if (count >= 1000) {
+							log.info(String
+									.format("Reached count 1000, saving in DynamoDB"));
+							dbUtils.putTemperatures(tableName, allTemperatures,
+									timestamp);
+							allTemperatures.clear();
+							count = 0;
+						}
+					}
 				} catch (Exception e) {
 					log.error("Error parsing record", e);
 					System.exit(1);
 				}
 			}
 
-			synchronized (lock) {
-				if (largestTimestamp.get() < timestamp) {
-					log.info(String
-							.format("Found new larger timestamp: %d (was %d), clearing state",
-									timestamp, largestTimestamp.get()));
-					largestTimestamp.set(timestamp);
-					temperatures.clear();
-				}
-
-				// Only add to the shared list if our data is from the latest
-				// run.
-				if (largestTimestamp.get() == timestamp) {
-					for (ArrayList<Double> list : allTemperatures.values()) {
-						temperatures.addAll(list);
-					}
-					Collections.sort(temperatures);
-				}
-			}
-
 			try {
+				// Restliche Temperaturen persistieren auf DynamoDB
+				dbUtils.putTemperatures(tableName, allTemperatures, timestamp);
+				allTemperatures.clear();
 				checkpointer.checkpoint();
 			} catch (Exception e) {
 				log.error(
@@ -252,11 +244,13 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 		AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
 		AmazonDynamoDB amazonDynamoDB = new AmazonDynamoDBClient(
 				credentialsProvider, new ClientConfiguration());
-		AmazonDynamoDBClient client = new AmazonDynamoDBClient();
+		AmazonDynamoDBClient client = new AmazonDynamoDBClient(
+				credentialsProvider);
 		client.setRegion(region);
 		DynamoDB dynamoDB = new DynamoDB(client);
 		amazonDynamoDB.setRegion(region);
-		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB);
+		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB,
+				client);
 		dbUtils.deleteTable(db_name);
 		dbUtils.createTemperatureTableIfNotExists(tableName);
 

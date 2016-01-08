@@ -35,7 +35,7 @@ public class Utils {
 
 	/**
 	 * Generates the next temperature. It will either be the last Temperature or
-	 * the last Temperature +- 0.1 degree (all with a 33.3% chance)
+	 * the last Temperature +- 0.1 degree (all with a ~33.3% chance)
 	 * 
 	 * @param lastTemperature
 	 *            Last temperature that was send. Used as the base to calculate
@@ -58,7 +58,7 @@ public class Utils {
 
 	/**
 	 * Generates a blob containing a UTF-8 string. The string begins with the
-	 * genereated temperature in decimal notation, followed by a semicolon,
+	 * generated temperature in decimal notation, followed by a semicolon,
 	 * followed by the sensorname, followed by a semicolon, followed by padding.
 	 * 
 	 * @param lastTemperature

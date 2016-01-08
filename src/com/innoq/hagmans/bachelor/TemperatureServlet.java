@@ -2,15 +2,49 @@ package com.innoq.hagmans.bachelor;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.RegionUtils;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
+
 public class TemperatureServlet extends HttpServlet {
 
-	public TemperatureServlet() {
+	private DynamoDBUtils dbUtils;
+
+	private String tableName;
+
+	public TemperatureServlet(String streamName, String db_name,
+			String tableName) {
+		this.tableName = tableName;
+		KinesisClientLibConfiguration config = new KinesisClientLibConfiguration(
+				db_name, streamName, new DefaultAWSCredentialsProviderChain(),
+				"KinesisProducerLibSampleConsumer").withRegionName(
+				TemperatureProducer.REGION).withInitialPositionInStream(
+				InitialPositionInStream.TRIM_HORIZON);
+
+		Region region = RegionUtils.getRegion(TemperatureProducer.REGION);
+		AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
+		AmazonDynamoDB amazonDynamoDB = new AmazonDynamoDBClient(
+				credentialsProvider, new ClientConfiguration());
+		AmazonDynamoDBClient client = new AmazonDynamoDBClient();
+		client.setRegion(region);
+		DynamoDB dynamoDB = new DynamoDB(client);
+		amazonDynamoDB.setRegion(region);
+		dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB, client);
 	}
 
 	@Override
@@ -22,24 +56,33 @@ public class TemperatureServlet extends HttpServlet {
 		// network socket
 		PrintWriter out = response.getWriter();
 
+		HashMap<String, HashMap<String, ArrayList<Object>>> allTemperatures = dbUtils
+				.getAllSensorTemperatures(tableName);
+
 		// Write the response message, in an HTML page
 		try {
 			out.println("<!DOCTYPE html>");
 			out.println("<html><head>");
 			out.println("<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'>");
-			out.println("<title>Hello, World</title></head>");
+			out.println("<title>Aktuelle Temperaturen</title></head>");
 			out.println("<body>");
-			out.println("<h1>Hello, world!</h1>"); // says Hello
-			// Echo client's request information
-			out.println("<p>Request URI: " + request.getRequestURI() + "</p>");
-			out.println("<p>Protocol: " + request.getProtocol() + "</p>");
-			out.println("<p>PathInfo: " + request.getPathInfo() + "</p>");
-			out.println("<p>Remote Address: " + request.getRemoteAddr()
-					+ "</p>");
-			// out.println("<p>Temperatures: " + temperatures + "</p>");
-			// Generate a random number upon each request
-			out.println("<p>A Random Number: <strong>" + Math.random()
-					+ "</strong></p>");
+			out.println("<h1>Aktuelle Temperaturen</h1>");
+			for (String sensor : allTemperatures.keySet()) {
+				HashMap<String, ArrayList<Object>> hashMap = allTemperatures
+						.get(sensor);
+				out.println("<h2>Sensor: " + sensor + "</h2>");
+				for (String timestamp : hashMap.keySet()) {
+					out.println("<h2>Timestamp: " + timestamp + "</h2>");
+					out.println("<ol>");
+					for (Object temperature : hashMap.get(timestamp)) {
+						if (temperature != null) {
+							out.println("<li>Temperatur: "
+									+ (String) temperature + "</li>");
+						}
+					}
+					out.println("</ol>");
+				}
+			}
 			out.println("</body>");
 			out.println("</html>");
 		} finally {

@@ -37,7 +37,8 @@ public class DeleteResources {
 		client.setRegion(region);
 		DynamoDB dynamoDB = new DynamoDB(client);
 		amazonDynamoDB.setRegion(region);
-		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB);
+		DynamoDBUtils dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB,
+				client);
 		dbUtils.deleteTable(db_name);
 		dbUtils.deleteTable(TemperatureConsumer.tableName);
 

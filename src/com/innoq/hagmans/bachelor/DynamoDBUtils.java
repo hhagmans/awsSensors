@@ -16,7 +16,10 @@ package com.innoq.hagmans.bachelor;
  */
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
@@ -24,10 +27,16 @@ import org.apache.commons.logging.LogFactory;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.ItemCollection;
+import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
@@ -35,6 +44,8 @@ import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ResourceInUseException;
 import com.amazonaws.services.dynamodbv2.model.ResourceNotFoundException;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
 /**
  * Utility methods for interacting with Amazon DynamoDB for this application.
@@ -43,10 +54,12 @@ public class DynamoDBUtils {
 	private static final Log LOG = LogFactory.getLog(DynamoDBUtils.class);
 
 	private static final String ATTRIBUTE_NAME_HASH_KEY = "sensor";
-	private static final String ATTRIBUTE_NAME_RANGE_KEY = "count";
+	private static final String ATTRIBUTE_NAME_RANGE_KEY = "time_stamp";
+	private static final String ATTRIBUTE_NAME_TEMPERATURE = "temperatures";
 
 	private AmazonDynamoDB amazonDynamoDB;
 	private DynamoDB dynamoDB;
+	private AmazonDynamoDBClient client;
 
 	/**
 	 * Create a new utility instance that uses the provided Amazon DynamoDB
@@ -55,12 +68,14 @@ public class DynamoDBUtils {
 	 * @param dynamoDB
 	 *            The Amazon DynamoDB client to use.
 	 */
-	public DynamoDBUtils(DynamoDB dynamoDB, AmazonDynamoDB amazonDynamoDB) {
-		if (amazonDynamoDB == null) {
+	public DynamoDBUtils(DynamoDB dynamoDB, AmazonDynamoDB amazonDynamoDB,
+			AmazonDynamoDBClient client) {
+		if (amazonDynamoDB == null || dynamoDB == null || client == null) {
 			throw new NullPointerException("dynamoDB must not be null");
 		}
 		this.amazonDynamoDB = amazonDynamoDB;
 		this.dynamoDB = dynamoDB;
+		this.client = client;
 	}
 
 	/**
@@ -120,16 +135,93 @@ public class DynamoDBUtils {
 		}
 	}
 
-	public void putTemperature(String tableName, String sensor,
-			double temperature, String count) {
+	public void putTemperatures(String tableName,
+			HashMap<String, ArrayList<String>> temperatureMap, long timestamp) {
 
 		Table table = dynamoDB.getTable(tableName);
 
-		table.putItem(new Item().withPrimaryKey("sensor", sensor, "count",
-				count).withDouble("temperature", temperature));
-		System.out.println("PutItem succeeded: "
-				+ table.getItem("sensor", sensor, "count", count)
-						.toJSONPretty());
+		for (String sensor : temperatureMap.keySet()) {
+			QuerySpec spec = new QuerySpec().withHashKey(
+					ATTRIBUTE_NAME_HASH_KEY, sensor).withRangeKeyCondition(
+					new RangeKeyCondition(ATTRIBUTE_NAME_RANGE_KEY).eq(String
+							.valueOf(timestamp)));
+
+			ItemCollection<QueryOutcome> items = table.query(spec);
+
+			Iterator<Item> iterator = items.iterator();
+			Item item = null;
+			List<String> temperatures = null;
+			while (iterator.hasNext()) {
+				item = iterator.next();
+				temperatures = item.getList(ATTRIBUTE_NAME_TEMPERATURE);
+			}
+
+			if (temperatures == null) {
+				temperatures = new ArrayList<>();
+			}
+			temperatures.addAll(temperatureMap.get(sensor));
+			table.putItem(new Item()
+					.withPrimaryKey(ATTRIBUTE_NAME_HASH_KEY, sensor,
+							ATTRIBUTE_NAME_RANGE_KEY, String.valueOf(timestamp))
+					.withList(ATTRIBUTE_NAME_TEMPERATURE, temperatures));
+			System.out.println("PutItem succeeded!");
+		}
+	}
+
+	/**
+	 * Gibt eine @HashMap mit allen Temperaturen zurück für den übergebenen
+	 * Sensor
+	 * 
+	 * @param sensor
+	 * @param tableName
+	 * @return @Hashmap, die als Key einen Timestamp enthalten, zu dessen
+	 *         Zeitpunkt die Daten des Sensors erfasst werden und die Values
+	 *         sind eine Liste der Temperaturen des Sensors zum Timestamp
+	 */
+	public HashMap<String, ArrayList<Object>> getTemperaturesForSensor(
+			String sensor, String tableName) {
+		Table table = dynamoDB.getTable(tableName);
+
+		QuerySpec spec = new QuerySpec().withHashKey(ATTRIBUTE_NAME_HASH_KEY,
+				sensor);
+
+		ItemCollection<QueryOutcome> items = table.query(spec);
+
+		Iterator<Item> iterator = items.iterator();
+		Item item = null;
+		HashMap<String, ArrayList<Object>> temperatureMap = new HashMap<>();
+		while (iterator.hasNext()) {
+			item = iterator.next();
+			temperatureMap.put(item.getString(ATTRIBUTE_NAME_RANGE_KEY),
+					new ArrayList<>(item.getList(ATTRIBUTE_NAME_TEMPERATURE)));
+		}
+
+		return temperatureMap;
+	}
+
+	/**
+	 * Gibt eine @HashMap mit allen Temperaturen zurück für alle Sensoren
+	 * 
+	 * @param tableName
+	 * @return @HashMap, deren Key der Names eines Sensors ist. Die Values sind
+	 *         eine weitere @HashMap, die als Key einen Timestamp enthalten, zu
+	 *         dessen Zeitpunkt die Daten des Sensors erfasst werden und die
+	 *         Values sind eine Liste der Temperaturen des Sensors zum Timestamp
+	 */
+	public HashMap<String, HashMap<String, ArrayList<Object>>> getAllSensorTemperatures(
+			String tableName) {
+		ScanRequest scanRequest = new ScanRequest().withTableName(tableName);
+
+		ScanResult result = client.scan(scanRequest);
+		HashMap<String, HashMap<String, ArrayList<Object>>> allTemperatures = new HashMap<>();
+		for (Map<String, AttributeValue> item : result.getItems()) {
+			String sensorName = item.get(ATTRIBUTE_NAME_HASH_KEY).getS();
+			HashMap<String, ArrayList<Object>> currentHashMap = getTemperaturesForSensor(
+					sensorName, tableName);
+			allTemperatures.put(sensorName, currentHashMap);
+		}
+
+		return allTemperatures;
 	}
 
 	/*
