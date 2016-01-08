@@ -205,7 +205,7 @@ public class TemperatureProducer {
 			recordsPerSecond = Integer.parseInt(args[3]);
 		}
 
-		// Delete old stream if it exists and create a new stream
+		// Create a new stream if it doesn't already exists
 		Region region = RegionUtils.getRegion(REGION);
 		AWSCredentialsProvider credentialsProvider = new DefaultAWSCredentialsProviderChain();
 		AmazonKinesis kinesis = new AmazonKinesisClient(credentialsProvider,

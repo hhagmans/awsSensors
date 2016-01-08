@@ -92,7 +92,7 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 	// determine which run is the latest and disregard data from earlier runs.
 	private final AtomicLong largestTimestamp = new AtomicLong(0);
 
-	// Map of record temperatures we have seen so far.
+	// Map of temperatures we have seen so far.
 	private final List<Double> temperatures = new ArrayList<>();
 
 	public static String db_name = "SensorConsumer";
@@ -151,10 +151,11 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 				try {
 					byte[] b = new byte[r.getData().remaining()];
 					r.getData().get(b);
-					String count = new String(b, "UTF-8").split(";")[0];
-					Double currentTemperature = Double.parseDouble(new String(
-							b, "UTF-8").split(";")[1]);
-					String sensorName = (new String(b, "UTF-8").split(";")[2]);
+					String[] splittedString = new String(b, "UTF-8").split(";");
+					String count = splittedString[0];
+					Double currentTemperature = Double
+							.parseDouble(splittedString[1]);
+					String sensorName = (splittedString[2]);
 
 					ArrayList<Double> tempList;
 					if (allTemperatures.containsKey(sensorName)) {

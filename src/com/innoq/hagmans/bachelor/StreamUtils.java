@@ -15,7 +15,6 @@ package com.innoq.hagmans.bachelor;
  * permissions and limitations under the License.
  */
 
-import java.math.BigInteger;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
@@ -25,11 +24,7 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.DescribeStreamResult;
-import com.amazonaws.services.kinesis.model.InvalidArgumentException;
-import com.amazonaws.services.kinesis.model.LimitExceededException;
 import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
-import com.amazonaws.services.kinesis.model.Shard;
-import com.amazonaws.services.kinesis.model.StreamDescription;
 
 /**
  * A collection of functions to manipulate Amazon Kinesis streams.
@@ -186,80 +181,4 @@ public class StreamUtils {
 		}
 	}
 
-	/**
-	 * Split a shard by dividing the hash key space in half.
-	 * 
-	 * @param streamName
-	 *            Name of the stream that contains the shard to split.
-	 * @param shardId
-	 *            The id of the shard to split.
-	 * 
-	 * @throws IllegalArgumentException
-	 *             When either streamName or shardId are null or empty.
-	 * @throws LimitExceededException
-	 *             Shard limit for the account has been reached.
-	 * @throws ResourceNotFoundException
-	 *             The stream or shard cannot be found.
-	 * @throws InvalidArgumentException
-	 *             If the shard is closed and no eligible for splitting.
-	 * @throws AmazonClientException
-	 *             Error communicating with Amazon Kinesis.
-	 * 
-	 */
-	public void splitShardEvenly(String streamName, String shardId)
-			throws LimitExceededException, ResourceNotFoundException,
-			AmazonClientException, InvalidArgumentException,
-			IllegalArgumentException {
-		if (streamName == null || streamName.isEmpty()) {
-			throw new IllegalArgumentException("stream name is required");
-		}
-		if (shardId == null || shardId.isEmpty()) {
-			throw new IllegalArgumentException("shard id is required");
-		}
-
-		DescribeStreamResult result = kinesis.describeStream(streamName);
-		StreamDescription description = result.getStreamDescription();
-
-		// Find the shard we want to split
-		Shard shardToSplit = null;
-		for (Shard shard : description.getShards()) {
-			if (shardId.equals(shard.getShardId())) {
-				shardToSplit = shard;
-				break;
-			}
-		}
-
-		if (shardToSplit == null) {
-			throw new ResourceNotFoundException(
-					"Could not find shard with id '" + shardId
-							+ "' in stream '" + streamName + "'");
-		}
-
-		// Check if the shard is still open. Open shards do not have an ending
-		// sequence number.
-		if (shardToSplit.getSequenceNumberRange().getEndingSequenceNumber() != null) {
-			throw new InvalidArgumentException(
-					"Shard is CLOSED and is not eligible for splitting");
-		}
-
-		// Calculate the median hash key to use as the new starting hash key for
-		// the shard.
-		BigInteger startingHashKey = new BigInteger(shardToSplit
-				.getHashKeyRange().getStartingHashKey());
-		BigInteger endingHashKey = new BigInteger(shardToSplit
-				.getHashKeyRange().getEndingHashKey());
-		BigInteger[] medianHashKey = startingHashKey.add(endingHashKey)
-				.divideAndRemainder(new BigInteger("2"));
-		BigInteger newStartingHashKey = medianHashKey[0];
-		if (!BigInteger.ZERO.equals(medianHashKey[1])) {
-			// In order to more evenly distributed the new hash key ranges
-			// across the new shards we will "round up" to
-			// the next integer when our current hash key range is not evenly
-			// divisible by 2.
-			newStartingHashKey = newStartingHashKey.add(BigInteger.ONE);
-		}
-
-		// Submit the split shard request
-		kinesis.splitShard(streamName, shardId, newStartingHashKey.toString());
-	}
 }

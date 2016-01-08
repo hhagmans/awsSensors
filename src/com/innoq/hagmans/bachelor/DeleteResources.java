@@ -12,7 +12,7 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
 
 /**
- * Deletes all resources used in this example (Kinesis stream and Dynamo DB)
+ * Deletes all resources used in this example (Kinesis stream and Dynamo DBs)
  * 
  * @author hhagmans
  * 

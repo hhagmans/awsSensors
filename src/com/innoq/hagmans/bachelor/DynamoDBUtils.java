@@ -24,9 +24,6 @@ import org.apache.commons.logging.LogFactory;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig.TableNameOverride;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
@@ -64,21 +61,6 @@ public class DynamoDBUtils {
 		}
 		this.amazonDynamoDB = amazonDynamoDB;
 		this.dynamoDB = dynamoDB;
-	}
-
-	/**
-	 * Create a DynamoDB mapper that uses the provided table name in every
-	 * request.
-	 * 
-	 * @param tableName
-	 *            The name of the DynamoDB table the mapper will use for all
-	 *            requests.
-	 * @return A mapper capable of reading/writing to the table given.
-	 */
-	public DynamoDBMapper createMapperForTable(String tableName) {
-		DynamoDBMapperConfig config = new DynamoDBMapperConfig(
-				TableNameOverride.withTableNameReplacement(tableName));
-		return new DynamoDBMapper(amazonDynamoDB, config);
 	}
 
 	/**
