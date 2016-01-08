@@ -105,10 +105,7 @@ public class TemperatureServlet extends HttpServlet {
 			for (String sensor : allTemperatures.keySet()) {
 				HashMap<String, ArrayList<Object>> hashMap = allTemperatures
 						.get(sensor);
-				out.println("<h2>Sensor: " + sensor + "</h2>");
 				for (String timestamp : hashMap.keySet()) {
-					out.println("<h3>Started at timestamp: " + timestamp
-							+ "</h3>");
 					out.println("<div id='chartContainer"
 							+ tempSensorCount
 							+ "' style='height: 300px; width: 75%; margin-left:auto; margin-right:auto;'></div>");

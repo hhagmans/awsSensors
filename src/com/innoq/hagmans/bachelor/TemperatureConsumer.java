@@ -259,11 +259,11 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 		StreamUtils streamUtils = new StreamUtils(kinesis);
 		try {
 			if (!streamUtils.isActive(kinesis.describeStream(streamName))) {
-				log.info("Stream is not active.");
+				log.info("Stream is not active. Waiting for Stream to become active....");
 				streamUtils.waitForStreamToBecomeActive(streamName);
 			}
 		} catch (ResourceNotFoundException e) {
-			log.info("Stream is not created right now.");
+			log.info("Stream is not created right now. Waiting for stream to get created and become active....");
 			streamUtils.waitForStreamToBecomeActive(streamName);
 		}
 		dbUtils.deleteTable(db_name);
