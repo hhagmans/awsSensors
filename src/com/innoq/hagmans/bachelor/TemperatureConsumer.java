@@ -142,12 +142,11 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 				IRecordProcessorCheckpointer checkpointer) {
 			long timestamp = 0;
 			HashMap<String, ArrayList<String>> allTemperatures = new HashMap<>();
-
+			int count = 0;
 			for (Record r : records) {
 				// Get the timestamp of this run from the partition key.
 				timestamp = Math.max(timestamp,
 						Long.parseLong(r.getPartitionKey()));
-				int count = 0;
 				// Extract the sequence number. It's encoded as a decimal
 				// string and placed at the beginning of the record data,
 				// followed by a space. The rest of the record data is padding
@@ -168,8 +167,8 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 					tempList.add(currentTemperature);
 					allTemperatures.put(sensorName, tempList);
 
-					log.info("Current temperature of " + sensorName + " is "
-							+ currentTemperature);
+					log.info("Current temperature #" + count + " of "
+							+ sensorName + " is " + currentTemperature);
 					count++;
 					synchronized (lock) {
 						if (count >= 1000) {

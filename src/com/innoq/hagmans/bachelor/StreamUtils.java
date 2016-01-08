@@ -134,10 +134,7 @@ public class StreamUtils {
 	}
 
 	public void waitForStreamToBecomeActive(String streamName) {
-		int maxRetries = 3;
-		int i = 0;
-		while (i < maxRetries) {
-			i++;
+		while (true) {
 			try {
 				if (isActive(kinesis.describeStream(streamName))) {
 					return;
@@ -156,8 +153,6 @@ public class StreamUtils {
 				return;
 			}
 		}
-		throw new RuntimeException("Stream " + streamName
-				+ " did not become active within 2 minutes.");
 	}
 
 	/**
