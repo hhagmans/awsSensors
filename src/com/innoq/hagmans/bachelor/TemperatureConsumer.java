@@ -15,6 +15,9 @@
 
 package com.innoq.hagmans.bachelor;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -166,21 +169,16 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 					}
 					tempList.put(currentTimeStamp, currentTemperature);
 					allTemperatures.put(sensorName, tempList);
-
+					Calendar cal = Calendar.getInstance();
+					cal.setTimeInMillis(timestamp);
+					DateFormat df = new SimpleDateFormat(
+							"dd.MM.yyyy HH:mm:ss 'and' SSS 'milliseconds'");
 					log.info("Current temperature #" + count + " of "
-							+ sensorName + " at timestamp " + currentTimeStamp
-							+ " is " + currentTemperature);
+							+ sensorName + " at timestamp "
+							+ df.format(cal.getTime()) + " is "
+							+ currentTemperature);
 					count++;
-					synchronized (lock) {
-						if (count >= 1000) {
-							log.info(String
-									.format("Reached count 1000, saving in DynamoDB"));
-							dbUtils.putTemperatures(tableName, allTemperatures,
-									timestamp);
-							allTemperatures.clear();
-							count = 0;
-						}
-					}
+
 				} catch (Exception e) {
 					log.error("Error parsing record", e);
 					System.exit(1);

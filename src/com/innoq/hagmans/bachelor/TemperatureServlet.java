@@ -2,6 +2,9 @@ package com.innoq.hagmans.bachelor;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
 
 import javax.servlet.ServletException;
@@ -88,8 +91,13 @@ public class TemperatureServlet extends HttpServlet {
 					out.println(" {");
 					out.println("animationEnabled: true,");
 					out.println("zoomEnabled: true,");
+					Calendar cal = Calendar.getInstance();
+					cal.setTimeInMillis(Long.valueOf(timestamp));
+					DateFormat df = new SimpleDateFormat(
+							"dd.MM.yyyy HH:mm:ss 'and' SSS 'milliseconds'");
 					out.println("title:{text: '" + sensor
-							+ " started at timestamp " + timestamp + "'},    ");
+							+ " started at timestamp "
+							+ df.format(cal.getTime()) + "'},    ");
 					out.println("data: [{type: 'line', dataPoints: dataPoints"
 							+ sensorCount + "}]");
 					out.println("});");

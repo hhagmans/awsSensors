@@ -80,7 +80,7 @@ public class Utils {
 		sb.append(";");
 		sb.append(sensorName);
 		sb.append(";");
-		sb.append(String.valueOf(System.nanoTime()));
+		sb.append(String.valueOf(System.currentTimeMillis()));
 		sb.append(";");
 		while (sb.length() < totalLen) {
 			sb.append("a");
