@@ -19,7 +19,6 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class Utils {
 	private static final Random RANDOM = new Random();
@@ -71,11 +70,9 @@ public class Utils {
 	 *            is added until this length is reached.
 	 * @return ByteBuffer containing the blob
 	 */
-	public static ByteBuffer generateData(AtomicLong count,
-			double lasttemperature, String sensorName, int totalLen) {
+	public static ByteBuffer generateData(double lasttemperature,
+			String sensorName, int totalLen) {
 		StringBuilder sb = new StringBuilder();
-		sb.append(count);
-		sb.append(";");
 		sb.append(Double.toString(getNextTemperature(lasttemperature)));
 		sb.append(";");
 		sb.append(sensorName);

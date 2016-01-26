@@ -20,8 +20,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
@@ -55,28 +53,6 @@ import com.amazonaws.services.kinesis.model.ResourceNotFoundException;
  * correctly by the KCL by verifying that there are no gaps in the sequence
  * numbers.
  * 
- * <p>
- * As the consumer runs, it will periodically log a message indicating the
- * number of gaps it found in the sequence numbers. A gap is when the difference
- * between two consecutive elements in the sorted list of seen sequence numbers
- * is greater than 1.
- * 
- * <p>
- * Over time the number of gaps should converge to 0. You should also observe
- * that the range of sequence numbers seen is equal to the number of records put
- * by the SampleProducer.
- * 
- * <p>
- * If the stream contains data from multiple runs of SampleProducer, you should
- * observe the SampleConsumer detecting this and resetting state to only count
- * the latest run.
- * 
- * <p>
- * Note if you kill the SampleConsumer halfway and run it again, the number of
- * gaps may never converge to 0. This is because checkpoints may have been made
- * such that some records from the producer's latest run are not processed
- * again. If you observe this, simply run the producer to completion again
- * without terminating the consumer.
  * 
  * <p>
  * The consumer continues running until manually terminated, even if there are
@@ -149,34 +125,26 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 				// Get the timestamp of this run from the partition key.
 				timestamp = Math.max(timestamp,
 						Long.parseLong(r.getPartitionKey()));
-				// Extract the sequence number. It's encoded as a decimal
-				// string and placed at the beginning of the record data,
-				// followed by a space. The rest of the record data is padding
-				// that we will simply discard.
+				// Extract the data. All data are sperated with a semicolon
 				try {
 					byte[] b = new byte[r.getData().remaining()];
 					r.getData().get(b);
 					String[] splittedString = new String(b, "UTF-8").split(";");
-					String currentTemperature = splittedString[1];
-					String sensorName = (splittedString[2]);
-					String currentTimeStamp = (splittedString[3]);
+					String currentTemperature = splittedString[0];
+					String sensorName = (splittedString[1]);
+					String currentTimeStamp = (splittedString[2]);
 
-					HashMap<String, String> tempList;
+					// Create a new hashmap, if there isn't already one, and
+					// combine the old and new temperature data
+					HashMap<String, String> tempMap;
 					if (allTemperatures.containsKey(sensorName)) {
-						tempList = allTemperatures.get(sensorName);
+						tempMap = allTemperatures.get(sensorName);
 					} else {
-						tempList = new HashMap<>();
+						tempMap = new HashMap<>();
 					}
-					tempList.put(currentTimeStamp, currentTemperature);
-					allTemperatures.put(sensorName, tempList);
-					Calendar cal = Calendar.getInstance();
-					cal.setTimeInMillis(timestamp);
-					DateFormat df = new SimpleDateFormat(
-							"dd.MM.yyyy HH:mm:ss 'and' SSS 'milliseconds'");
-					log.info("Current temperature #" + count + " of "
-							+ sensorName + " at timestamp "
-							+ df.format(cal.getTime()) + " is "
-							+ currentTemperature);
+					tempMap.put(currentTimeStamp, currentTemperature);
+					allTemperatures.put(sensorName, tempMap);
+					logResults(timestamp, count, sensorName, currentTemperature);
 					count++;
 
 				} catch (Exception e) {
@@ -186,9 +154,8 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 			}
 
 			try {
-				// Restliche Temperaturen persistieren auf DynamoDB
+				// Persist tempertures in DynamoDB
 				dbUtils.putTemperatures(tableName, allTemperatures, timestamp);
-				allTemperatures.clear();
 				checkpointer.checkpoint();
 			} catch (Exception e) {
 				log.error(
@@ -212,16 +179,15 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 	/**
 	 * Log a message indicating the current state.
 	 */
-	public void logResults() {
-		/*
-		 * synchronized (lock) { if (largestTimestamp.get() == 0) { return; }
-		 * 
-		 * if (temperatures.size() == 0) {
-		 * log.info("No sequence numbers found for current run."); return; }
-		 * 
-		 * // log.info(String.format("Current temperature is " // +
-		 * temperatures.get(0))); }
-		 */
+	public void logResults(long timestamp, int count, String sensorName,
+			String currentTemperature) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTimeInMillis(timestamp);
+		DateFormat df = new SimpleDateFormat(
+				"dd.MM.yyyy HH:mm:ss 'and' SSS 'milliseconds'");
+		log.info("Current temperature #" + count + " of " + sensorName
+				+ " at timestamp " + df.format(cal.getTime()) + " is "
+				+ currentTemperature);
 	}
 
 	@Override
@@ -235,6 +201,7 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 			db_name = args[1];
 		}
 
+		// Initialize Utils
 		KinesisClientLibConfiguration config = new KinesisClientLibConfiguration(
 				db_name, streamName, new DefaultAWSCredentialsProviderChain(),
 				"KinesisProducerLibSampleConsumer").withRegionName(
@@ -271,13 +238,6 @@ public class TemperatureConsumer implements IRecordProcessorFactory {
 		Thread.sleep(1000);
 
 		final TemperatureConsumer consumer = new TemperatureConsumer();
-
-		Executors.newScheduledThreadPool(1).scheduleAtFixedRate(new Runnable() {
-			@Override
-			public void run() {
-				consumer.logResults();
-			}
-		}, 10, 1, TimeUnit.SECONDS);
 
 		new Worker.Builder().recordProcessorFactory(consumer).config(config)
 				.build().run();

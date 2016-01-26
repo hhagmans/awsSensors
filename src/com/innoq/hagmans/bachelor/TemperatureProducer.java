@@ -47,10 +47,10 @@ import com.google.common.util.concurrent.ListenableFuture;
  * record.
  * 
  * <p>
- * This class puts a randomly generated temperature and a sequence number in
- * each logical record, and then padding the record to 128 bytes long. The
- * consumer will then check that all records are received correctly by verifying
- * that there are no gaps in the sequence numbers.
+ * This class puts a randomly generated temperature, a sensor name and a
+ * timestamp in each logical record, and then padding the record to 128 bytes
+ * long. The consumer will then check that all records are received correctly by
+ * verifying that there are no gaps in the sequence numbers.
  * 
  * <p>
  * We will distribute the records evenly across all shards by using a random
@@ -253,8 +253,8 @@ public class TemperatureProducer {
 		final Runnable putOneRecord = new Runnable() {
 			@Override
 			public void run() {
-				ByteBuffer data = Utils.generateData(sequenceNumber,
-						temperature, sensorName, DATA_SIZE);
+				ByteBuffer data = Utils.generateData(temperature, sensorName,
+						DATA_SIZE);
 				// TIMESTAMP is our partition key
 				ListenableFuture<UserRecordResult> f = producer.addUserRecord(
 						streamName, TIMESTAMP, Utils.randomExplicitHashKey(),

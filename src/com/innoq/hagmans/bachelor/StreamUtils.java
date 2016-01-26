@@ -133,6 +133,13 @@ public class StreamUtils {
 		return "ACTIVE".equals(r.getStreamDescription().getStreamStatus());
 	}
 
+	/**
+	 * Checks if a stream is active and waits, if it's not active, until it
+	 * becomes active
+	 * 
+	 * @param streamName
+	 *            The name of the stream we are waiting for to become active
+	 */
 	public void waitForStreamToBecomeActive(String streamName) {
 		while (true) {
 			try {

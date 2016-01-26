@@ -23,6 +23,12 @@ public class ServletStarter {
 	 */
 	public static String streamName = TemperatureConsumer.streamName;
 
+	/**
+	 * Starts the Jetty Server and puts the servlet in the context
+	 * 
+	 * @param args
+	 * @throws Exception
+	 */
 	public static void main(String[] args) throws Exception {
 
 		if (args.length == 2) {

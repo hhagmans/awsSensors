@@ -66,7 +66,11 @@ public class DynamoDBUtils {
 	 * client.
 	 * 
 	 * @param dynamoDB
-	 *            The Amazon DynamoDB client to use.
+	 * 
+	 * @param amazonDynamoDB
+	 * 
+	 * @param client
+	 * 
 	 */
 	public DynamoDBUtils(DynamoDB dynamoDB, AmazonDynamoDB amazonDynamoDB,
 			AmazonDynamoDBClient client) {
@@ -135,6 +139,18 @@ public class DynamoDBUtils {
 		}
 	}
 
+	/**
+	 * Persists the given temperatures on DynamoDB
+	 * 
+	 * @param tableName
+	 *            The name of the table, where the records will be persisted
+	 * @param temperatureMap
+	 *            A map containing the sensor names as the key, and as the value
+	 *            a hashmap with the timestamp of the temperature as the key and
+	 *            the temperature as the value
+	 * @param timestamp
+	 *            The timestamp of the run
+	 */
 	public void putTemperatures(String tableName,
 			HashMap<String, HashMap<String, String>> temperatureMap,
 			long timestamp) {
@@ -201,13 +217,13 @@ public class DynamoDBUtils {
 	}
 
 	/**
-	 * Gibt eine @HashMap mit allen Temperaturen zurück für alle Sensoren
+	 * Returns a @HashMap with all temperatures for all sensors
 	 * 
 	 * @param tableName
-	 * @return @HashMap, deren Key der Names eines Sensors ist. Die Values sind
-	 *         eine weitere @HashMap, die als Key einen Timestamp enthalten, zu
-	 *         dessen Zeitpunkt die Daten des Sensors erfasst werden und die
-	 *         Values sind eine Liste der Temperaturen des Sensors zum Timestamp
+	 * @return @HashMap, which key is the name of the sensor. The values are
+	 *         another @HashMap, which has timestamps of the date that the
+	 *         temperatures were created as keys, and the values are a list of
+	 *         temperatures of the sensor at the given timestamp
 	 */
 	public HashMap<String, HashMap<String, HashMap<String, Object>>> getAllSensorTemperatures(
 			String tableName) {
@@ -224,13 +240,6 @@ public class DynamoDBUtils {
 
 		return allTemperatures;
 	}
-
-	/*
-	 * public Map<String, List<String>> getMapOfTemperatures(String tableName) {
-	 * HashMap<String, List<String>> temperatureMap = new HashMap<>();
-	 * 
-	 * }
-	 */
 
 	/**
 	 * Delete a DynamoDB table.

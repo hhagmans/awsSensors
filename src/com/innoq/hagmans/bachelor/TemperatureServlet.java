@@ -49,6 +49,9 @@ public class TemperatureServlet extends HttpServlet {
 		dbUtils = new DynamoDBUtils(dynamoDB, amazonDynamoDB, client);
 	}
 
+	/**
+	 * Shows a page with charts for every sensorstart
+	 */
 	@Override
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
@@ -62,7 +65,6 @@ public class TemperatureServlet extends HttpServlet {
 		if (dbUtils.doesTableExist(tableName)) {
 			allTemperatures = dbUtils.getAllSensorTemperatures(tableName);
 		}
-		// Write the response message, in an HTML page
 		try {
 			out.println("<!DOCTYPE html>");
 			out.println("<html><head>");
